@@ -79,6 +79,22 @@ fastify.post('/login', async (req, reply) => {
   }
 });
 
+fastify.post('/check-user', async (req, reply) => {
+  const { email } = req.body;
+
+  try {
+    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    if (result.rows.length > 0) {
+      return reply.send({ existe: true });
+    } else {
+      return reply.send({ existe: false });
+    }
+  } catch (err) {
+    console.error(err);
+    reply.status(500).send({ error: 'Erro ao verificar o e-mail.' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await client.query('SELECT * FROM produtos_academia');

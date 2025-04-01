@@ -4,6 +4,7 @@ const cors = require('@fastify/cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -36,12 +37,17 @@ fastify.post("/register", async (req, reply) => {
     const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
 
     if (usuarioExistente.rows.length > 0) {
-      return reply.status(400).send({ error: "Usuário já existe." });
+      return reply.status(400).send({ error: "E-mail já está em uso." });
     }
 
-    let senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
-    if (!senhaSegura) {
-      return reply.status(400).send({ error: "Senha ou UID são obrigatórios." });
+    let senhaSegura;
+    if (uid) {
+      senhaSegura = uid;
+    } else if (senha) {
+      senhaSegura = await bcrypt.hash(senha, 10);
+    } else {
+      const senhaAleatoria = crypto.randomBytes(16).toString("hex");
+      senhaSegura = await bcrypt.hash(senhaAleatoria, 10);
     }
 
     await pool.query(
@@ -62,7 +68,7 @@ fastify.post('/login', async (req, reply) => {
   try {
     const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
     if (result.rows.length === 0) {
-      return reply.status(400).send({ error: 'E-mail ou senha incorretos.' });
+      return reply.status(400).send({ error: 'Conta não encontrada. Faça o cadastro primeiro.' });
     }
 
     const usuario = result.rows[0];

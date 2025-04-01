@@ -1,77 +1,87 @@
 require('dotenv').config();
 const fastify = require('fastify')();
 const cors = require('@fastify/cors');
-const { Client } = require('pg');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
 });
 
-client.connect()
-  .then(() => console.log("🟢 Conectado ao banco de dados"))
-  .catch(err => {
-    console.error("🔴 Erro ao conectar ao banco:", err);
-    process.exit(1);
-  });
+setInterval(async () => {
+  try {
+    await pool.query('SELECT 1');
+    console.log("🔄 Mantendo conexão ativa...");
+  } catch (error) {
+    console.error("🔴 Erro ao manter conexão ativa:", error);
+  }
+}, 3 * 60 * 1000);
 
 fastify.register(cors, {
-  origin: '*',
+  origin: [
+    "https://ironfit.vercel.app",
+    "http://localhost:3000",
+    "https://iron-fit-frontend.vercel.app"
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 });
 
-fastify.post('/register', async (req, reply) => {
-  const { nome, email, senha, confirmacaoSenha } = req.body;
-
-  if (senha !== confirmacaoSenha) {
-    return reply.status(400).send({ error: 'As senhas não coincidem.' });
-  }
+fastify.post("/register", async (req, reply) => {
+  const { nome, email, senha, uid } = req.body;
 
   try {
-    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-    if (result.rows.length > 0) {
-      return reply.status(400).send({ error: 'E-mail já cadastrado.' });
+    const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+
+    if (usuarioExistente.rows.length > 0) {
+      return reply.status(400).send({ error: "Usuário já existe." });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const senhaCriptografada = await bcrypt.hash(senha, salt);
+    let senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
+    if (!senhaSegura) {
+      return reply.status(400).send({ error: "Senha ou UID são obrigatórios." });
+    }
 
-    await client.query(
-      'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *',
-      [nome, email, senhaCriptografada]
+    await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3)",
+      [nome, email, senhaSegura]
     );
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    reply.status(201).send({ token });
-  } catch (err) {
-    console.error(err);
-    reply.status(500).send({ error: 'Erro interno do servidor.' });
+    reply.status(201).send({ message: "Usuário cadastrado com sucesso!" });
+  } catch (erro) {
+    console.error("Erro ao cadastrar usuário:", erro);
+    reply.status(500).send({ error: "Erro ao cadastrar usuário." });
   }
 });
 
 fastify.post('/login', async (req, reply) => {
-  const { email, senha } = req.body;
+  const { email, senha, uid } = req.body;
 
   try {
-    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
     if (result.rows.length === 0) {
       return reply.status(400).send({ error: 'E-mail ou senha incorretos.' });
     }
 
     const usuario = result.rows[0];
 
+    if (uid) {
+      if (usuario.senha === uid) {
+        const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        return reply.send({ token });
+      } else {
+        return reply.status(400).send({ error: 'Conta Google inválida.' });
+      }
+    }
+
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) {
       return reply.status(400).send({ error: 'E-mail ou senha incorretos.' });
     }
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
+    const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     reply.send({ token });
   } catch (err) {
     console.error(err);
@@ -83,49 +93,17 @@ fastify.post('/check-user', async (req, reply) => {
   const { email } = req.body;
 
   try {
-    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-    if (result.rows.length > 0) {
-      return reply.send({ existe: true });
-    } else {
-      return reply.send({ existe: false });
-    }
+    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    reply.send(result.rows.length > 0 ? { existe: true, uid: result.rows[0].senha } : { existe: false });
   } catch (err) {
     console.error(err);
     reply.status(500).send({ error: 'Erro ao verificar o e-mail.' });
   }
 });
 
-fastify.post('/register-google', async (req, reply) => {
-  const { nome, email } = req.body;
-
-  try {
-    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-
-    if (result.rows.length > 0) {
-      return reply.status(400).send({ error: 'Usuário já cadastrado.' });
-    }
-
-    const senhaPadrao = Math.random().toString(36).slice(-8);
-    const salt = await bcrypt.genSalt(10);
-    const senhaCriptografada = await bcrypt.hash(senhaPadrao, salt);
-
-    await client.query(
-      'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *',
-      [nome, email, senhaCriptografada]
-    );
-
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    reply.status(201).send({ token });
-  } catch (err) {
-    console.error(err);
-    reply.status(500).send({ error: 'Erro ao cadastrar usuário com Google.' });
-  }
-});
-
 fastify.get('/produtos', async (req, reply) => {
   try {
-    const res = await client.query('SELECT * FROM produtos_academia');
+    const res = await pool.query('SELECT * FROM produtos_academia');
     reply.send(res.rows);
   } catch (err) {
     reply.status(500).send({ error: "Erro ao buscar produtos" });
@@ -135,7 +113,7 @@ fastify.get('/produtos', async (req, reply) => {
 fastify.get('/produtos/:id', async (req, reply) => {
   const { id } = req.params;
   try {
-    const res = await client.query('SELECT * FROM produtos_academia WHERE IDProduto = $1', [id]);
+    const res = await pool.query('SELECT * FROM produtos_academia WHERE IDProduto = $1', [id]);
     if (res.rows.length === 0) {
       return reply.status(404).send({ error: "Produto não encontrado" });
     }

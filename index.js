@@ -95,6 +95,34 @@ fastify.post('/check-user', async (req, reply) => {
   }
 });
 
+fastify.post('/register-google', async (req, reply) => {
+  const { nome, email } = req.body;
+
+  try {
+    const result = await client.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+
+    if (result.rows.length > 0) {
+      return reply.status(400).send({ error: 'Usuário já cadastrado.' });
+    }
+
+    const senhaPadrao = Math.random().toString(36).slice(-8);
+    const salt = await bcrypt.genSalt(10);
+    const senhaCriptografada = await bcrypt.hash(senhaPadrao, salt);
+
+    await client.query(
+      'INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING *',
+      [nome, email, senhaCriptografada]
+    );
+
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    reply.status(201).send({ token });
+  } catch (err) {
+    console.error(err);
+    reply.status(500).send({ error: 'Erro ao cadastrar usuário com Google.' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await client.query('SELECT * FROM produtos_academia');

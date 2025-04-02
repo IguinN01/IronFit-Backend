@@ -40,23 +40,23 @@ fastify.post("/register", async (req, reply) => {
       return reply.status(400).send({ error: "E-mail já está em uso." });
     }
 
-    let senhaSegura;
+    let senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
 
-    if (uid) {
-      senhaSegura = uid;
-    } else if (senha) {
-      senhaSegura = await bcrypt.hash(senha, 10);
-    } else {
-      const senhaAleatoria = crypto.randomBytes(16).toString("hex");
+    if (!senhaSegura) {
+      const senhaAleatoria = require('crypto').randomBytes(16).toString("hex");
       senhaSegura = await bcrypt.hash(senhaAleatoria, 10);
     }
 
-    await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3)",
+    const novoUsuario = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
       [nome, email, senhaSegura]
     );
 
-    reply.status(201).send({ message: "Usuário cadastrado com sucesso!" });
+    const userId = novoUsuario.rows[0].id;
+
+    const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
   } catch (erro) {
     console.error("Erro ao cadastrar usuário:", erro);
     reply.status(500).send({ error: "Erro ao cadastrar usuário." });
@@ -96,15 +96,20 @@ fastify.post('/login', async (req, reply) => {
   }
 });
 
-fastify.post('/check-user', async (req, reply) => {
+fastify.post("/check-user", async (req, reply) => {
   const { email } = req.body;
 
   try {
-    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-    reply.send(result.rows.length > 0 ? { existe: true, uid: result.rows[0].senha } : { existe: false });
+    const result = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+
+    if (result.rows.length > 0) {
+      return reply.send({ existe: true, uid: result.rows[0].senha });
+    }
+
+    return reply.send({ existe: false });
   } catch (err) {
     console.error(err);
-    reply.status(500).send({ error: 'Erro ao verificar o e-mail.' });
+    reply.status(500).send({ error: "Erro ao verificar o e-mail." });
   }
 });
 

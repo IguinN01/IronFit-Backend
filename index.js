@@ -43,8 +43,7 @@ fastify.post("/register", async (req, reply) => {
     let senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
 
     if (!senhaSegura) {
-      const senhaAleatoria = require('crypto').randomBytes(16).toString("hex");
-      senhaSegura = await bcrypt.hash(senhaAleatoria, 10);
+      return reply.status(400).send({ error: "Erro ao gerar senha segura." });
     }
 
     const novoUsuario = await pool.query(

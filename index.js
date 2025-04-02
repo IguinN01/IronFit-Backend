@@ -41,6 +41,7 @@ fastify.post("/register", async (req, reply) => {
     }
 
     let senhaSegura;
+
     if (uid) {
       senhaSegura = uid;
     } else if (senha) {
@@ -145,4 +146,4 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, err => {
 // git status
 // git add .
 // git commit -m "000"
-// git push origin main 
+// git push origin main

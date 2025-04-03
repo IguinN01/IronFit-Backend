@@ -4,6 +4,7 @@ const cors = require('@fastify/cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -28,6 +29,48 @@ fastify.register(cors, {
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
+});
+
+fastify.post("/auth/google", async (req, reply) => {
+  console.log("📩 Dados recebidos do Google:", req.body);
+
+  const { nome, email, googleId } = req.body;
+
+  if (!email || !googleId) {
+    return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
+  }
+
+  try {
+    const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+
+    if (usuarioExistente.rows.length > 0) {
+      const usuario = usuarioExistente.rows[0];
+
+      if (usuario.senha !== googleId) {
+        return reply.status(400).send({ error: "Conta Google inválida." });
+      }
+
+      const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+      return reply.send({ token });
+    }
+
+    const senhaGerada = crypto.randomBytes(16).toString('hex');
+    const senhaHash = await bcrypt.hash(senhaGerada, 10);
+
+    const novoUsuario = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
+      [nome, email, senhaHash]
+    );
+
+    const userId = novoUsuario.rows[0].id;
+
+    const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
+  } catch (erro) {
+    console.error("Erro na autenticação com Google:", erro);
+    reply.status(500).send({ error: "Erro interno no servidor." });
+  }
 });
 
 fastify.post("/register", async (req, reply) => {

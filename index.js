@@ -20,6 +20,12 @@ setInterval(async () => {
   }
 }, 3 * 60 * 1000);
 
+fastify.addHook('onSend', async (request, reply, payload) => {
+  reply.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  reply.header('Cross-Origin-Embedder-Policy', 'require-corp');
+  return payload;
+});
+
 fastify.register(cors, {
   origin: [
     "http://localhost:3000",

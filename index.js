@@ -21,15 +21,17 @@ setInterval(async () => {
 }, 3 * 60 * 1000);
 
 fastify.addHook('onSend', async (request, reply, payload) => {
-  reply.header('Cross-Origin-Opener-Policy', 'same-origin');
-  reply.header('Cross-Origin-Embedder-Policy', 'credentialless');
+  reply.header('Cross-Origin-Opener-Policy', 'unsafe-none');
+  reply.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
   return payload;
 });
+
 
 fastify.register(cors, {
   origin: [
     "http://localhost:3000",
     "https://academia-iron.web.app",
+    "https://iron-fit-fontend.vercel.app",
     "https://academia-frontend-ten.vercel.app"
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

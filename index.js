@@ -22,9 +22,9 @@ setInterval(async () => {
 
 fastify.register(cors, {
   origin: [
-    "https://ironfit.vercel.app",
     "http://localhost:3000",
-    "https://iron-fit-frontend.vercel.app"
+    "https://academia-iron.web.app",
+    "https://academia-frontend-ten.vercel.app"
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true

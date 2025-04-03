@@ -46,7 +46,7 @@ fastify.post("/register", async (req, reply) => {
       return reply.status(400).send({ error: "E-mail já está em uso." });
     }
 
-    let senhaSegura = senha ? await bcrypt.hash(senha, 10) : uid;
+    const senhaSegura = uid ? uid : await bcrypt.hash(senha, 10);
 
     const novoUsuario = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",

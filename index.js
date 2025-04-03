@@ -4,7 +4,6 @@ const cors = require('@fastify/cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -20,13 +19,6 @@ setInterval(async () => {
   }
 }, 3 * 60 * 1000);
 
-fastify.addHook('onSend', async (request, reply, payload) => {
-  reply.header('Cross-Origin-Opener-Policy', 'unsafe-none');
-  reply.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
-  return payload;
-});
-
-
 fastify.register(cors, {
   origin: [
     "http://localhost:3000",
@@ -39,7 +31,13 @@ fastify.register(cors, {
 });
 
 fastify.post("/register", async (req, reply) => {
+  console.log("📩 Dados recebidos:", req.body);
+
   const { nome, email, senha, uid } = req.body;
+
+  if (!nome || !email || (!senha && !uid)) {
+    return reply.status(400).send({ error: "Nome, email e senha/uid são obrigatórios." });
+  }
 
   try {
     const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
@@ -48,11 +46,7 @@ fastify.post("/register", async (req, reply) => {
       return reply.status(400).send({ error: "E-mail já está em uso." });
     }
 
-    let senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
-
-    if (!senhaSegura) {
-      return reply.status(400).send({ error: "Erro ao gerar senha segura." });
-    }
+    let senhaSegura = senha ? await bcrypt.hash(senha, 10) : uid;
 
     const novoUsuario = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
@@ -71,7 +65,13 @@ fastify.post("/register", async (req, reply) => {
 });
 
 fastify.post('/login', async (req, reply) => {
+  console.log("📩 Tentativa de login:", req.body);
+
   const { email, senha, uid } = req.body;
+
+  if (!email || (!senha && !uid)) {
+    return reply.status(400).send({ error: "E-mail e senha/uid são obrigatórios." });
+  }
 
   try {
     const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
@@ -98,13 +98,17 @@ fastify.post('/login', async (req, reply) => {
     const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
     reply.send({ token });
   } catch (err) {
-    console.error(err);
+    console.error("Erro no login:", err);
     reply.status(500).send({ error: 'Erro interno do servidor.' });
   }
 });
 
 fastify.post("/check-user", async (req, reply) => {
   const { email } = req.body;
+
+  if (!email) {
+    return reply.status(400).send({ error: "E-mail é obrigatório." });
+  }
 
   try {
     const result = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
@@ -115,7 +119,7 @@ fastify.post("/check-user", async (req, reply) => {
 
     return reply.send({ existe: false });
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao verificar usuário:", err);
     reply.status(500).send({ error: "Erro ao verificar o e-mail." });
   }
 });

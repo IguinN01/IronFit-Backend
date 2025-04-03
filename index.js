@@ -21,8 +21,8 @@ setInterval(async () => {
 }, 3 * 60 * 1000);
 
 fastify.addHook('onSend', async (request, reply, payload) => {
-  reply.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  reply.header('Cross-Origin-Embedder-Policy', 'require-corp');
+  reply.header('Cross-Origin-Opener-Policy', 'same-origin');
+  reply.header('Cross-Origin-Embedder-Policy', 'credentialless');
   return payload;
 });
 

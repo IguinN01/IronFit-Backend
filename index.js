@@ -31,6 +31,10 @@ fastify.register(cors, {
   credentials: true
 });
 
+fastify.get('/', async (req, reply) => {
+  reply.send({ message: 'API IronFit funcionando! Use /produtos para acessar os produtos.' });
+});
+
 fastify.post("/auth/google", async (req, reply) => {
   console.log("📩 Dados recebidos do Google:", req.body);
 
@@ -204,6 +208,30 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
   }
 });
 
+fastify.put('/usuario/:id/email', async (req, reply) => {
+  const { id } = req.params;
+  const { novoEmail } = req.body;
+
+  if (!novoEmail) {
+    return reply.status(400).send({ error: 'Novo e-mail é obrigatório.' });
+  }
+
+  try {
+    const existe = await pool.query('SELECT id FROM usuarios WHERE email = $1', [novoEmail]);
+
+    if (existe.rows.length > 0) {
+      return reply.status(400).send({ error: 'Este e-mail já está sendo usado por outro usuário.' });
+    }
+
+    await pool.query('UPDATE usuarios SET email = $1 WHERE id = $2', [novoEmail, id]);
+
+    return reply.send({ message: 'E-mail atualizado com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao atualizar e-mail:', err);
+    reply.status(500).send({ error: 'Erro interno ao atualizar o e-mail.' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await pool.query('SELECT * FROM produtos_academia');
@@ -224,10 +252,6 @@ fastify.get('/produtos/:id', async (req, reply) => {
   } catch (err) {
     reply.status(500).send({ error: "Erro ao buscar produto" });
   }
-});
-
-fastify.get('/', async (req, reply) => {
-  reply.send({ message: 'API IronFit funcionando! Use /produtos para acessar os produtos.' });
 });
 
 const PORT = process.env.PORT || 3000;

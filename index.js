@@ -73,7 +73,7 @@ fastify.post("/auth/google", async (req, reply) => {
   }
 });
 
-fastify.post("/register", async (req, reply) => {
+fastify.post("/cadastro", async (req, reply) => {
   console.log("📩 Dados recebidos:", req.body);
 
   const { nome, email, senha, uid } = req.body;

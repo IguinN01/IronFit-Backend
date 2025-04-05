@@ -187,6 +187,23 @@ fastify.get('/usuario/:id', async (req, reply) => {
   }
 });
 
+fastify.get('/usuarios/email/:email', async (req, reply) => {
+  const { email } = req.params;
+
+  try {
+    const result = await pool.query('SELECT id, nome, email, criado_em FROM usuarios WHERE email = $1', [email]);
+
+    if (result.rows.length === 0) {
+      return reply.status(404).send({ error: 'Usuário não encontrado' });
+    }
+
+    return reply.send(result.rows[0]);
+  } catch (error) {
+    console.error("Erro ao buscar usuário pelo e-mail:", error);
+    return reply.status(500).send({ error: 'Erro interno do servidor' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await pool.query('SELECT * FROM produtos_academia');

@@ -58,11 +58,10 @@ fastify.post("/auth/google", async (req, reply) => {
       return reply.send({ token });
     }
 
-    const senhaGerada = crypto.randomBytes(16).toString('hex');
-    const senhaHash = await bcrypt.hash(senhaGerada, 10);
+    const senhaHash = null;
 
     const novoUsuario = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3::text) RETURNING id",
       [nome, email, senhaHash]
     );
 
@@ -236,8 +235,8 @@ fastify.put('/usuario/:id/senha', async (req, reply) => {
   const { id } = req.params;
   const { senhaAtual, novaSenha } = req.body;
 
-  if (!senhaAtual || !novaSenha) {
-    return reply.status(400).send({ error: 'Senha atual e nova senha são obrigatórias.' });
+  if (!novaSenha) {
+    return reply.status(400).send({ error: 'Nova senha é obrigatória.' });
   }
 
   try {
@@ -247,17 +246,23 @@ fastify.put('/usuario/:id/senha', async (req, reply) => {
       return reply.status(404).send({ error: 'Usuário não encontrado.' });
     }
 
-    const senhaHashAtual = resultado.rows[0].senha;
-    const senhaConfere = await bcrypt.compare(senhaAtual, senhaHashAtual);
+    const senhaNoBanco = resultado.rows[0].senha;
 
-    if (!senhaConfere) {
-      return reply.status(401).send({ error: 'Senha atual incorreta.' });
+    if (senhaNoBanco) {
+      if (!senhaAtual) {
+        return reply.status(400).send({ error: 'Senha atual é obrigatória para alterar a senha.' });
+      }
+
+      const senhaConfere = await bcrypt.compare(senhaAtual, senhaNoBanco);
+      if (!senhaConfere) {
+        return reply.status(401).send({ error: 'Senha atual incorreta.' });
+      }
     }
 
     const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
     await pool.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [novaSenhaHash, id]);
 
-    reply.send({ message: 'Senha atualizada com sucesso.' });
+    reply.send({ message: senhaNoBanco ? 'Senha alterada com sucesso.' : 'Senha definida com sucesso.' });
   } catch (err) {
     console.error('Erro ao alterar senha:', err);
     reply.status(500).send({ error: 'Erro interno ao atualizar a senha.' });
@@ -283,6 +288,24 @@ fastify.put('/redefinir_senha', async (req, reply) => {
   } catch (err) {
     console.error('Erro ao redefinir senha:', err);
     reply.status(500).send({ error: 'Erro interno ao redefinir a senha.' });
+  }
+});
+
+fastify.get('/usuario/:id/tem_senha', async (req, reply) => {
+  const { id } = req.params;
+
+  try {
+    const resultado = await pool.query('SELECT senha FROM usuarios WHERE id = $1', [id]);
+
+    if (resultado.rows.length === 0) {
+      return reply.status(404).send({ error: 'Usuário não encontrado.' });
+    }
+
+    const temSenha = resultado.rows[0].senha !== null;
+    return reply.send({ temSenha });
+  } catch (err) {
+    console.error('Erro ao verificar senha:', err);
+    reply.status(500).send({ error: 'Erro interno ao verificar senha.' });
   }
 });
 

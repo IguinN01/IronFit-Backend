@@ -232,6 +232,38 @@ fastify.put('/usuario/:id/email', async (req, reply) => {
   }
 });
 
+fastify.put('/usuario/:id/senha', async (req, reply) => {
+  const { id } = req.params;
+  const { senhaAtual, novaSenha } = req.body;
+
+  if (!senhaAtual || !novaSenha) {
+    return reply.status(400).send({ error: 'Senha atual e nova senha são obrigatórias.' });
+  }
+
+  try {
+    const resultado = await pool.query('SELECT senha FROM usuarios WHERE id = $1', [id]);
+
+    if (resultado.rows.length === 0) {
+      return reply.status(404).send({ error: 'Usuário não encontrado.' });
+    }
+
+    const senhaHashAtual = resultado.rows[0].senha;
+    const senhaConfere = await bcrypt.compare(senhaAtual, senhaHashAtual);
+
+    if (!senhaConfere) {
+      return reply.status(401).send({ error: 'Senha atual incorreta.' });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query('UPDATE usuarios SET senha = $1 WHERE id = $2', [novaSenhaHash, id]);
+
+    reply.send({ message: 'Senha atualizada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao alterar senha:', err);
+    reply.status(500).send({ error: 'Erro interno ao atualizar a senha.' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await pool.query('SELECT * FROM produtos_academia');

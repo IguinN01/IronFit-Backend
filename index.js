@@ -196,7 +196,7 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
   try {
     const result = await pool.query(
       'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
-      [id]
+      [email]
     );
 
     if (result.rows.length === 0) {

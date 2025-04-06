@@ -38,7 +38,7 @@ fastify.get('/', async (req, reply) => {
 fastify.post("/auth/google", async (req, reply) => {
   console.log("📩 Dados recebidos do Google:", req.body);
 
-  const { nome, email, googleId } = req.body;
+  const { nome, email, googleId, foto } = req.body;
 
   if (!email || !googleId) {
     return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
@@ -62,12 +62,11 @@ fastify.post("/auth/google", async (req, reply) => {
     const senhaHash = await bcrypt.hash(senhaGerada, 10);
 
     const novoUsuario = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
-      [nome, email, senhaHash]
+      "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
+      [nome, email, senhaHash, foto]
     );
 
     const userId = novoUsuario.rows[0].id;
-
     const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });

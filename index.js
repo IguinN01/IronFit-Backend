@@ -84,7 +84,8 @@ fastify.post("/auth/google", async (req, reply) => {
 fastify.post("/cadastro", async (req, reply) => {
   console.log("📩 Dados recebidos:", req.body);
 
-  const { nome, email, senha, uid } = req.body;
+  const { nome, email, senha, uid, foto } = req.body;
+  const imagemFinal = foto || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   if (!nome || !email || (!senha && !uid)) {
     return reply.status(400).send({ error: "Nome, email e senha/uid são obrigatórios." });
@@ -99,11 +100,9 @@ fastify.post("/cadastro", async (req, reply) => {
 
     const senhaSegura = senha ? await bcrypt.hash(senha, 10) : null;
 
-    const imagemPadrao = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
     const novoUsuario = await pool.query(
       "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
-      [nome, email, senhaSegura, imagemPadrao]
+      [nome, email, senhaSegura, imagemFinal]
     );
 
     const userId = novoUsuario.rows[0].id;

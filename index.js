@@ -20,15 +20,16 @@ setInterval(async () => {
   }
 }, 3 * 60 * 1000);
 
-fastify.register(cors, {
+await fastify.register(cors, {
   origin: [
     "http://localhost:3000",
     "https://academia-iron.web.app",
     "https://iron-fit-fontend.vercel.app",
     "https://academia-frontend-ten.vercel.app"
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 });
 
 fastify.get('/', async (req, reply) => {
@@ -195,7 +196,7 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE email = $1',
       [email]
     );
 

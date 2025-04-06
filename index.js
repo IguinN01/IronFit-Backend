@@ -175,7 +175,7 @@ fastify.get('/usuario/:id', async (req, reply) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, nome, email, criado_em FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
       [id]
     );
 
@@ -194,7 +194,10 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
   const { email } = req.params;
 
   try {
-    const result = await pool.query('SELECT id, nome, email, criado_em FROM usuarios WHERE email = $1', [email]);
+    const result = await pool.query(
+      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
+      [id]
+    );
 
     if (result.rows.length === 0) {
       return reply.status(404).send({ error: 'Usuário não encontrado' });

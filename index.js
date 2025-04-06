@@ -38,7 +38,9 @@ fastify.get('/', async (req, reply) => {
 fastify.post("/auth/google", async (req, reply) => {
   console.log("📩 Dados recebidos do Google:", req.body);
 
-  const { nome, email, googleId } = req.body;
+  const { nome, email, googleId, foto } = req.body;
+
+  const imagemFinal = foto || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   if (!email || !googleId) {
     return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
@@ -50,8 +52,8 @@ fastify.post("/auth/google", async (req, reply) => {
     if (usuarioExistente.rows.length > 0) {
       const usuario = usuarioExistente.rows[0];
 
-      if (usuario.senha !== googleId) {
-        return reply.status(400).send({ error: "Conta Google inválida." });
+      if (usuario.senha !== null) {
+        return reply.status(400).send({ error: "Este e-mail pertence a uma conta com senha. Use login tradicional." });
       }
 
       const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
@@ -61,8 +63,8 @@ fastify.post("/auth/google", async (req, reply) => {
     const senhaHash = null;
 
     const novoUsuario = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3::text) RETURNING id",
-      [nome, email, senhaHash]
+      "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3::text, $4) RETURNING id",
+      [nome, email, senhaHash, foto]
     );
 
     const userId = novoUsuario.rows[0].id;
@@ -94,9 +96,11 @@ fastify.post("/cadastro", async (req, reply) => {
 
     const senhaSegura = senha ? await bcrypt.hash(senha, 10) : null;
 
+    const imagemPadrao = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
     const novoUsuario = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
-      [nome, email, senhaSegura]
+      "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
+      [nome, email, senhaSegura, imagemPadrao]
     );
 
     const userId = novoUsuario.rows[0].id;
@@ -175,7 +179,7 @@ fastify.get('/usuario/:id', async (req, reply) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, nome, email, criado_em FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
       [id]
     );
 
@@ -194,7 +198,7 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
   const { email } = req.params;
 
   try {
-    const result = await pool.query('SELECT id, nome, email, criado_em FROM usuarios WHERE email = $1', [email]);
+    const result = await pool.query('SELECT id, nome, email, foto, criado_em FROM usuarios WHERE email = $1', [email]);
 
     if (result.rows.length === 0) {
       return reply.status(404).send({ error: 'Usuário não encontrado' });
@@ -328,6 +332,23 @@ fastify.get('/produtos/:id', async (req, reply) => {
     reply.send(res.rows[0]);
   } catch (err) {
     reply.status(500).send({ error: "Erro ao buscar produto" });
+  }
+});
+
+fastify.put('/usuario/:id/foto', async (req, reply) => {
+  const { id } = req.params;
+  const { novaFoto } = req.body;
+
+  if (!novaFoto) {
+    return reply.status(400).send({ error: 'Nova foto é obrigatória.' });
+  }
+
+  try {
+    await pool.query('UPDATE usuarios SET foto = $1 WHERE id = $2', [novaFoto, id]);
+    return reply.send({ message: 'Foto de perfil atualizada com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao atualizar foto de perfil:', err);
+    reply.status(500).send({ error: 'Erro interno ao atualizar a foto.' });
   }
 });
 

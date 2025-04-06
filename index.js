@@ -92,7 +92,7 @@ fastify.post("/cadastro", async (req, reply) => {
       return reply.status(400).send({ error: "E-mail já está em uso." });
     }
 
-    const senhaSegura = uid || (senha ? await bcrypt.hash(senha, 10) : null);
+    const senhaSegura = senha ? await bcrypt.hash(senha, 10) : null;
 
     const novoUsuario = await pool.query(
       "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",

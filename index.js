@@ -20,16 +20,15 @@ setInterval(async () => {
   }
 }, 3 * 60 * 1000);
 
-await fastify.register(cors, {
+fastify.register(cors, {
   origin: [
     "http://localhost:3000",
     "https://academia-iron.web.app",
     "https://iron-fit-fontend.vercel.app",
     "https://academia-frontend-ten.vercel.app"
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 });
 
 fastify.get('/', async (req, reply) => {
@@ -39,7 +38,7 @@ fastify.get('/', async (req, reply) => {
 fastify.post("/auth/google", async (req, reply) => {
   console.log("📩 Dados recebidos do Google:", req.body);
 
-  const { nome, email, googleId, foto } = req.body;
+  const { nome, email, googleId } = req.body;
 
   if (!email || !googleId) {
     return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
@@ -63,11 +62,12 @@ fastify.post("/auth/google", async (req, reply) => {
     const senhaHash = await bcrypt.hash(senhaGerada, 10);
 
     const novoUsuario = await pool.query(
-      "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
-      [nome, email, senhaHash, foto]
+      "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
+      [nome, email, senhaHash]
     );
 
     const userId = novoUsuario.rows[0].id;
+
     const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
@@ -176,7 +176,7 @@ fastify.get('/usuario/:id', async (req, reply) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
+      'SELECT id, nome, email, criado_em FROM usuarios WHERE id = $1',
       [id]
     );
 
@@ -195,10 +195,7 @@ fastify.get('/usuarios/email/:email', async (req, reply) => {
   const { email } = req.params;
 
   try {
-    const result = await pool.query(
-      'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE email = $1',
-      [email]
-    );
+    const result = await pool.query('SELECT id, nome, email, criado_em FROM usuarios WHERE email = $1', [email]);
 
     if (result.rows.length === 0) {
       return reply.status(404).send({ error: 'Usuário não encontrado' });

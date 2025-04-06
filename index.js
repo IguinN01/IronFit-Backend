@@ -1,5 +1,6 @@
 require('dotenv').config();
 const fastify = require('fastify')();
+const formbody = require('@fastify/formbody');
 const cors = require('@fastify/cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
@@ -10,6 +11,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
+
+fastify.register(formbody);
 
 setInterval(async () => {
   try {
@@ -64,7 +67,7 @@ fastify.post("/auth/google", async (req, reply) => {
 
     const novoUsuario = await pool.query(
       "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3::text, $4) RETURNING id",
-      [nome, email, senhaHash, foto]
+      [nome, email, senhaHash, imagemFinal]
     );
 
     const userId = novoUsuario.rows[0].id;

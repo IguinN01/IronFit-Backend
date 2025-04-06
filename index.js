@@ -264,6 +264,28 @@ fastify.put('/usuario/:id/senha', async (req, reply) => {
   }
 });
 
+fastify.put('/redefinir_senha', async (req, reply) => {
+  const { email, novaSenha } = req.body;
+
+  if (!email || !novaSenha) {
+    return reply.status(400).send({ error: 'E-mail e nova senha são obrigatórios.' });
+  }
+
+  try {
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    const resultado = await pool.query('UPDATE usuarios SET senha = $1 WHERE email = $2', [senhaHash, email]);
+
+    if (resultado.rowCount === 0) {
+      return reply.status(404).send({ error: 'Usuário não encontrado.' });
+    }
+
+    return reply.send({ message: 'Senha redefinida com sucesso no banco de dados.' });
+  } catch (err) {
+    console.error('Erro ao redefinir senha:', err);
+    reply.status(500).send({ error: 'Erro interno ao redefinir a senha.' });
+  }
+});
+
 fastify.get('/produtos', async (req, reply) => {
   try {
     const res = await pool.query('SELECT * FROM produtos_academia');

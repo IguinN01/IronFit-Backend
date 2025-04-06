@@ -16,7 +16,9 @@
     "express": "^4.21.2",
     "fastify": "^5.2.1",
     "fastify-cors": "^6.0.3",
+    "fastify-multer": "^2.0.3",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
     "pg": "^8.14.1"
   },
   "description": ""

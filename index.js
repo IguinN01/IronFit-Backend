@@ -1,12 +1,18 @@
-require('dotenv').config();
-const mercadopago = require('mercadopago');
-const fastify = require('fastify')();
-const formbody = require('@fastify/formbody');
-const cors = require('@fastify/cors');
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import Fastify from 'fastify';
+import formbody from '@fastify/formbody';
+import cors from '@fastify/cors';
+import pkg from 'pg';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import mercadopago from 'mercadopago';
+
+const { Pool } = pkg;
+
+const fastify = Fastify();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -15,7 +21,9 @@ const pool = new Pool({
 
 fastify.register(formbody);
 
-const mp = new mercadopago.MercadoPago({ accessToken: process.env.MP_ACCESS_TOKEN });
+mercadopago.configure({
+  access_token: process.env.MERCADO_PAGO_TOKEN
+});
 
 setInterval(async () => {
   try {
@@ -385,7 +393,7 @@ fastify.post('/criar_preferencia', async (req, reply) => {
       auto_return: 'approved',
     };
 
-    const response = await mp.preferences.create(preference);
+    const response = await mercadopago.preferences.create(preference);
 
     return reply.send({ id: response.body.id });
   } catch (error) {

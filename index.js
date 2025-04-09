@@ -1,6 +1,5 @@
-import mercadopago from 'mercadopago';
-
 require('dotenv').config();
+const mercadopago = require('mercadopago');
 const fastify = require('fastify')();
 const formbody = require('@fastify/formbody');
 const cors = require('@fastify/cors');

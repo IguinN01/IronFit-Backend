@@ -1,3 +1,5 @@
+import mercadopago from 'mercadopago';
+
 require('dotenv').config();
 const fastify = require('fastify')();
 const formbody = require('@fastify/formbody');
@@ -13,6 +15,10 @@ const pool = new Pool({
 });
 
 fastify.register(formbody);
+
+mercadopago.configure({
+  access_token: process.env.MERCADO_PAGO_TOKEN
+});
 
 setInterval(async () => {
   try {
@@ -352,6 +358,42 @@ fastify.put('/usuario/:id/foto', async (req, reply) => {
   } catch (err) {
     console.error('Erro ao atualizar foto de perfil:', err);
     reply.status(500).send({ error: 'Erro interno ao atualizar a foto.' });
+  }
+});
+
+fastify.post('/criar-preferencia', async (req, reply) => {
+  const { itens, usuario } = req.body;
+
+  if (!itens || !Array.isArray(itens) || itens.length === 0) {
+    return reply.status(400).send({ error: 'Itens da compra são obrigatórios.' });
+  }
+
+  try {
+    const preference = {
+      payer: {
+        name: usuario?.nome || '',
+        email: usuario?.email || ''
+      },
+      items: itens.map(item => ({
+        title: item.nome,
+        quantity: item.quantidade,
+        currency_id: 'BRL',
+        unit_price: parseFloat(item.preco),
+      })),
+      back_urls: {
+        success: 'https://academia-iron.web.app/sucesso',
+        failure: 'https://academia-iron.web.app/erro',
+        pending: 'https://academia-iron.web.app/pending'
+      },
+      auto_return: 'approved',
+    };
+
+    const response = await mercadopago.preferences.create(preference);
+
+    return reply.send({ id: response.body.id });
+  } catch (error) {
+    console.error("Erro ao criar preferência:", error);
+    return reply.status(500).send({ error: 'Erro ao criar preferência de pagamento.' });
   }
 });
 

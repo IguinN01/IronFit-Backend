@@ -15,9 +15,7 @@ const pool = new Pool({
 
 fastify.register(formbody);
 
-mercadopago.configure({
-  access_token: process.env.MERCADO_PAGO_TOKEN
-});
+const mp = new mercadopago.MercadoPago({ accessToken: process.env.MP_ACCESS_TOKEN });
 
 setInterval(async () => {
   try {
@@ -387,7 +385,7 @@ fastify.post('/criar_preferencia', async (req, reply) => {
       auto_return: 'approved',
     };
 
-    const response = await mercadopago.preferences.create(preference);
+    const response = await mp.preferences.create(preference);
 
     return reply.send({ id: response.body.id });
   } catch (error) {

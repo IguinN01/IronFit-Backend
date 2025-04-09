@@ -8,7 +8,7 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import mercadopago from 'mercadopago';
+import { MercadoPagoConfig } from 'mercadopago';
 
 const { Pool } = pkg;
 
@@ -21,8 +21,8 @@ const pool = new Pool({
 
 fastify.register(formbody);
 
-mercadopago.configure({
-  access_token: process.env.MERCADO_PAGO_TOKEN
+const mercadopago = new MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_TOKEN,
 });
 
 setInterval(async () => {

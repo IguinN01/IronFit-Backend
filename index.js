@@ -361,7 +361,7 @@ fastify.put('/usuario/:id/foto', async (req, reply) => {
   }
 });
 
-fastify.post('/criar-preferencia', async (req, reply) => {
+fastify.post('/criar_preferencia', async (req, reply) => {
   const { itens, usuario } = req.body;
 
   if (!itens || !Array.isArray(itens) || itens.length === 0) {

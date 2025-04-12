@@ -436,7 +436,7 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    const resultado = await payment.create({ body: paymentData });
+    const resultado = await payment.create(paymentData);
 
     reply.send(resultado.body);
   } catch (erro) {

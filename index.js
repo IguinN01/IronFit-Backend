@@ -8,7 +8,8 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import mercadopago, { payment } from 'mercadopago';
+import mercadopago from 'mercadopago';
+const { payment } = mercadopago;
 
 mercadopago.configurations = {
   access_token: process.env.MERCADO_PAGO_TOKEN

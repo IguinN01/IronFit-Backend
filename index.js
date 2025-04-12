@@ -10,7 +10,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import mercadopago from 'mercadopago';
 
-mercadopago.configurations.setAccessToken(process.env.MERCADO_PAGO_TOKEN);
+mercadopago.configurations = {
+  access_token: process.env.MERCADO_PAGO_TOKEN
+};
+
 const { preference } = mercadopago;
 
 const { Pool } = pkg;

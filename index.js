@@ -12,9 +12,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import mercadopago from 'mercadopago';
 
-mercadopago.configurations = {
-  access_token: process.env.MERCADO_PAGO_TOKEN
-};
+const mp = new mercadopago.MercadoPagoConfig({
+  accessToken: process.env.MERCADO_PAGO_TOKEN
+});
 
 const { Pool } = pkg;
 const fastify = Fastify();
@@ -394,7 +394,7 @@ fastify.post('/checkout', async (req, reply) => {
       auto_return: "approved"
     };
 
-    const resultado = await mercadopago.preferences.create(preferenceData);
+    const resultado = await mp.preference.create(preferenceData);
 
     reply.send({ id: resultado.body.id });
   } catch (erro) {
@@ -435,9 +435,9 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    const resultado = await mercadopago.payment.create(paymentData);
+    const resultado = await mp.payment.create({ body: paymentData });
 
-    reply.send(resultado.body);
+    reply.send(resultado);
   } catch (erro) {
     console.error('Erro ao processar pagamento com cartão:', erro);
     reply.status(500).send({ error: 'Erro ao processar o pagamento.' });

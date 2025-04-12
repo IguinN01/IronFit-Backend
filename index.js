@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
+
 import Fastify from 'fastify';
 import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
@@ -9,13 +11,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import mercadopago from 'mercadopago';
-const payment = mercadopago.payment;
 
 mercadopago.configurations = {
   access_token: process.env.MERCADO_PAGO_TOKEN
 };
-
-const { preference } = mercadopago;
 
 const { Pool } = pkg;
 const fastify = Fastify();
@@ -395,9 +394,9 @@ fastify.post('/checkout', async (req, reply) => {
       auto_return: "approved"
     };
 
-    const resultado = await preference.create({ body: preferenceData, config: mercadopago });
+    const resultado = await mercadopago.preferences.create(preferenceData);
 
-    reply.send({ id: resultado.id });
+    reply.send({ id: resultado.body.id });
   } catch (erro) {
     console.error("Erro ao criar preferência:", erro);
     reply.status(500).send({ error: "Erro ao criar a preferência de pagamento." });

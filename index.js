@@ -9,12 +9,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { MercadoPagoConfig } from 'mercadopago';
-import { preference } from 'mercadopago';
+import mercadopago from 'mercadopago';
 
+const { preference } = mercadopago;
 const { Pool } = pkg;
-
 const fastify = Fastify();
-
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },

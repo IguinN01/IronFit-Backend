@@ -404,6 +404,7 @@ fastify.post('/checkout', async (req, reply) => {
 });
 
 fastify.post('/pagamento-cartao', async (req, reply) => {
+  console.log("📦 Dados recebidos no backend:", req.body);
   try {
     const {
       token,
@@ -428,8 +429,8 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       payer: {
         email: payer.email,
         identification: {
-          type: payer.identification.type,  
-          number: payer.identification.number  
+          type: payer.identification.type,
+          number: payer.identification.number
         }
       }
     };

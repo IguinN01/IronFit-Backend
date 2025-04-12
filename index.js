@@ -8,22 +8,22 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { MercadoPagoConfig } from 'mercadopago';
 import mercadopago from 'mercadopago';
 
+mercadopago.configure({
+  access_token: process.env.MERCADO_PAGO_TOKEN
+});
 const { preference } = mercadopago;
+
 const { Pool } = pkg;
 const fastify = Fastify();
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
 fastify.register(formbody);
-
-const mercadopago = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_TOKEN,
-});
 
 setInterval(async () => {
   try {

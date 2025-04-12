@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { MercadoPagoConfig } from 'mercadopago';
+import { preference } from 'mercadopago';
 
 const { Pool } = pkg;
 
@@ -367,38 +368,38 @@ fastify.put('/usuario/:id/foto', async (req, reply) => {
 });
 
 fastify.post('/criar_preferencia', async (req, reply) => {
-  const { itens, usuario } = req.body;
-
-  if (!itens || !Array.isArray(itens) || itens.length === 0) {
-    return reply.status(400).send({ error: 'Itens da compra são obrigatórios.' });
-  }
-
   try {
-    const preference = {
-      payer: {
-        name: usuario?.nome || '',
-        email: usuario?.email || ''
-      },
-      items: itens.map(item => ({
+    const { itens, email, enderecoEntrega } = req.body;
+
+    if (!Array.isArray(itens) || itens.length === 0) {
+      return reply.status(400).send({ error: "Itens da compra são obrigatórios." });
+    }
+
+    const preferenceData = {
+      items: itens.map((item) => ({
         title: item.nome,
         quantity: item.quantidade,
-        currency_id: 'BRL',
-        unit_price: parseFloat(item.preco),
+        unit_price: Number(item.preco),
+        currency_id: "BRL",
       })),
-      back_urls: {
-        success: 'https://academia-iron.web.app/sucesso',
-        failure: 'https://academia-iron.web.app/erro',
-        pending: 'https://academia-iron.web.app/pending'
+      payer: {
+        email: email,
       },
-      auto_return: 'approved',
+      back_urls: {
+        success: "https://academia-iron.web.app/obrigado",
+        failure: "https://academia-iron.web.app/erro",
+        pending: "https://academia-iron.web.app/pendente"
+      },
+      notification_url: "https://seuservidor.com/webhook-pagamento",
+      auto_return: "approved"
     };
 
-    const response = await mercadopago.preferences.create(preference);
+    const resultado = await preference.create({ body: preferenceData, config: mercadopago });
 
-    return reply.send({ id: response.body.id });
-  } catch (error) {
-    console.error("Erro ao criar preferência:", error);
-    return reply.status(500).send({ error: 'Erro ao criar preferência de pagamento.' });
+    reply.send({ id: resultado.id });
+  } catch (erro) {
+    console.error("Erro ao criar preferência:", erro);
+    reply.status(500).send({ error: "Erro ao criar a preferência de pagamento." });
   }
 });
 

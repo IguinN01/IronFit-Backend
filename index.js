@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import mercadopago from 'mercadopago';
-const { payment } = mercadopago;
+const payment = mercadopago.payment;
 
 mercadopago.configurations = {
   access_token: process.env.MERCADO_PAGO_TOKEN
@@ -436,7 +436,7 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    const resultado = await payment.create(paymentData);
+    const resultado = await mercadopago.payment.create(paymentData);
 
     reply.send(resultado.body);
   } catch (erro) {

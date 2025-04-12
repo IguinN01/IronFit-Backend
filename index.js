@@ -403,6 +403,46 @@ fastify.post('/checkout', async (req, reply) => {
   }
 });
 
+fastify.post('/pagamento-cartao', async (req, reply) => {
+  try {
+    const {
+      token,
+      payment_method_id,
+      issuer_id,
+      transaction_amount,
+      installments,
+      payer
+    } = req.body;
+
+    if (!token || !payment_method_id || !transaction_amount || !payer?.email || !payer?.identification?.number) {
+      return reply.status(400).send({ error: 'Dados de pagamento incompletos.' });
+    }
+
+    const paymentData = {
+      token,
+      payment_method_id,
+      issuer_id,
+      transaction_amount: Number(transaction_amount),
+      installments: Number(installments),
+      description: "Compra no IronFit",
+      payer: {
+        email: payer.email,
+        identification: {
+          type: payer.identification.type,  
+          number: payer.identification.number  
+        }
+      }
+    };
+
+    const resultado = await mercadopago.payment.create({ body: paymentData });
+
+    reply.send(resultado.body);
+  } catch (erro) {
+    console.error('Erro ao processar pagamento com cartão:', erro);
+    reply.status(500).send({ error: 'Erro ao processar o pagamento.' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 fastify.listen({ port: PORT, host: '0.0.0.0' }, err => {
   if (err) {

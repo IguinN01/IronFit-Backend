@@ -438,7 +438,8 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
         }
       }
     };
-
+    
+    console.log("📦 Payload enviado ao MercadoPago:", paymentData);
     const response = await payment.create({ body: paymentData });
 
     const statusPagamento = response.body.status;

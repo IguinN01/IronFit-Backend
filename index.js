@@ -407,8 +407,6 @@ fastify.post('/checkout', async (req, reply) => {
 
 fastify.post('/pagamento-cartao', async (req, reply) => {
   console.log("📦 Dados recebidos no backend:", req.body);
-  console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
-
   try {
     const {
       token,
@@ -424,41 +422,27 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
     }
 
     const paymentData = {
-      token: req.body.token,
-      payment_method_id: req.body.payment_method_id,
-      issuer_id: req.body.issuer_id,
-      transaction_amount: Number(req.body.transaction_amount),
-      installments: Number(req.body.installments),
+      token,
+      payment_method_id,
+      issuer_id,
+      transaction_amount: Number(transaction_amount),
+      installments: Number(installments),
+      description: "Compra no IronFit",
       payer: {
-        email: req.body.payer.email,
+        email: payer.email,
         identification: {
-          type: req.body.payer.identification.type,
-          number: req.body.payer.identification.number
+          type: payer.identification.type,
+          number: payer.identification.number
         }
       }
     };
 
-    const response = await payment.create({ body: paymentData });
+    const resultado = await payment.create({ body: paymentData });
 
-    const statusPagamento = response.body.status;
-    const idPagamento = response.body.id;
-
-    console.log("✅ Pagamento criado:", response.body);
-
-    reply.send({ status: statusPagamento, id: idPagamento });
-
+    reply.send(resultado);
   } catch (erro) {
-    console.error('❌ Erro ao processar pagamento com cartão:', {
-      message: erro.message,
-      status: erro.status,
-      cause: erro.cause,
-      body: erro?.response?.body,
-    });
-
-    reply.status(500).send({
-      error: 'Erro ao processar o pagamento.',
-      detalhes: erro.message || erro
-    });
+    console.error('Erro ao processar pagamento com cartão:', erro);
+    reply.status(500).send({ error: 'Erro ao processar o pagamento.' });
   }
 });
 

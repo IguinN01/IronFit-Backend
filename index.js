@@ -10,7 +10,7 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import mercadopago from 'mercadopago';
+import * as mercadopago from 'mercadopago';
 
 mercadopago.configure({
   access_token: process.env.MERCADO_PAGO_TOKEN,

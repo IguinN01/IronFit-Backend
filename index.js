@@ -419,7 +419,16 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       payer
     } = req.body;
 
-    if (!token || !payment_method_id || !transaction_amount || !payer?.email || !payer?.identification?.number) {
+    if (
+      !token ||
+      !payment_method_id ||
+      !issuer_id ||
+      !transaction_amount ||
+      !installments ||
+      !payer?.email ||
+      !payer?.identification?.type ||
+      !payer?.identification?.number
+    ) {
       return reply.status(400).send({ error: 'Dados de pagamento incompletos.' });
     }
 
@@ -427,8 +436,8 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       token,
       payment_method_id,
       issuer_id,
-      transaction_amount: Number(transaction_amount),
-      installments: Number(installments),
+      transaction_amount: parseFloat(transaction_amount),
+      installments: parseInt(installments),
       description: "Compra IronFit",
       payer: {
         email: payer.email,
@@ -438,16 +447,18 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
         }
       }
     };
-    
-    console.log("📦 Payload enviado ao MercadoPago:", paymentData);
-    const response = await payment.create({ body: paymentData });
 
-    const statusPagamento = response.body.status;
-    const idPagamento = response.body.id;
+    console.log("📦 Payload enviado ao MercadoPago:", paymentData);
+
+    const response = await payment.create({ body: paymentData });
 
     console.log("✅ Pagamento criado:", response.body);
 
-    reply.send({ status: statusPagamento, id: idPagamento });
+    return reply.send({
+      status: response.body.status,
+      id: response.body.id,
+      detail: response.body.status_detail
+    });
 
   } catch (erro) {
     console.error('❌ Erro ao processar pagamento com cartão:', {
@@ -458,7 +469,7 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       full_error: erro
     });
 
-    reply.status(500).send({
+    return reply.status(500).send({
       error: 'Erro ao processar o pagamento.',
       detalhes: erro.message || erro
     });

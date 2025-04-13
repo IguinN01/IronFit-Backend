@@ -430,17 +430,10 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       transaction_amount: Number(req.body.transaction_amount),
       installments: Number(req.body.installments),
       payer: {
-        email: req.body.cardholderEmail,
+        email: req.body.payer.email,
         identification: {
-          type: req.body.identificationType,
-          number: req.body.identificationNumber
-        }
-      },
-      cardholder: {
-        name: req.body.cardholderName,
-        identification: {
-          type: req.body.identificationType,
-          number: req.body.identificationNumber
+          type: req.body.payer.identification.type,
+          number: req.body.payer.identification.number
         }
       }
     };

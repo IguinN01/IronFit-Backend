@@ -424,16 +424,17 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
     }
 
     const paymentData = {
-      token: req.body.token,
-      payment_method_id: req.body.payment_method_id,
-      issuer_id: req.body.issuer_id,
-      transaction_amount: Number(req.body.transaction_amount),
-      installments: Number(req.body.installments),
+      token,
+      payment_method_id,
+      issuer_id,
+      transaction_amount: Number(transaction_amount),
+      installments: Number(installments),
+      description: "Compra IronFit",
       payer: {
-        email: req.body.payer.email,
+        email: payer.email,
         identification: {
-          type: req.body.payer.identification.type,
-          number: req.body.payer.identification.number
+          type: payer.identification.type,
+          number: payer.identification.number
         }
       }
     };

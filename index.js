@@ -418,13 +418,7 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       payer
     } = req.body;
 
-    if (
-      !token ||
-      !payment_method_id ||
-      !transaction_amount ||
-      !payer?.email ||
-      !payer?.identification?.number
-    ) {
+    if (!token || !payment_method_id || !transaction_amount || !payer?.email || !payer?.identification?.number) {
       return reply.status(400).send({ error: 'Dados de pagamento incompletos.' });
     }
 
@@ -444,18 +438,14 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    const resultado = await payment.create({ body: paymentData });
+    const response = await payment.create({ body: paymentData });
 
-    const statusPagamento = resultado.status;
-    const idPagamento = resultado.id;
+    const statusPagamento = response.body.status;
+    const idPagamento = response.body.id;
 
-    console.log("✅ Pagamento efetuado:", { statusPagamento, idPagamento });
+    console.log("✅ Pagamento criado:", response.body);
 
-    reply.send({
-      id: idPagamento,
-      status: statusPagamento,
-      detalhes: resultado
-    });
+    reply.send({ status: statusPagamento, id: idPagamento });
 
   } catch (erro) {
     console.error('❌ Erro ao processar pagamento com cartão:', erro);

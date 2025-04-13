@@ -10,14 +10,11 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import mercadopago from 'mercadopago';
 
-const mp = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_TOKEN
+mercadopago.configure({
+  access_token: process.env.MERCADO_PAGO_TOKEN,
 });
-
-const payment = new Payment(mp);
-
 const { Pool } = pkg;
 const fastify = Fastify();
 
@@ -369,41 +366,41 @@ fastify.put('/usuario/:id/foto', async (req, reply) => {
   }
 });
 
-// fastify.post('/checkout', async (req, reply) => {
-//   try {
-//     const { itens, email, enderecoEntrega } = req.body;
+fastify.post('/checkout', async (req, reply) => {
+  try {
+    const { itens, email, enderecoEntrega } = req.body;
 
-//     if (!Array.isArray(itens) || itens.length === 0) {
-//       return reply.status(400).send({ error: "Itens da compra são obrigatórios." });
-//     }
+    if (!Array.isArray(itens) || itens.length === 0) {
+      return reply.status(400).send({ error: "Itens da compra são obrigatórios." });
+    }
 
-//     const preferenceData = {
-//       items: itens.map((item) => ({
-//         title: item.nome,
-//         quantity: item.quantidade,
-//         unit_price: Number(item.preco),
-//         currency_id: "BRL",
-//       })),
-//       payer: {
-//         email: email,
-//       },
-//       back_urls: {
-//         success: "https://academia-iron.web.app/obrigado",
-//         failure: "https://academia-iron.web.app/erro",
-//         pending: "https://academia-iron.web.app/pendente"
-//       },
-//       notification_url: "https://seuservidor.com/webhook-pagamento",
-//       auto_return: "approved"
-//     };
+    const preferenceData = {
+      items: itens.map((item) => ({
+        title: item.nome,
+        quantity: item.quantidade,
+        unit_price: Number(item.preco),
+        currency_id: "BRL",
+      })),
+      payer: {
+        email: email,
+      },
+      back_urls: {
+        success: "https://academia-iron.web.app/obrigado",
+        failure: "https://academia-iron.web.app/erro",
+        pending: "https://academia-iron.web.app/pendente"
+      },
+      notification_url: "https://seuservidor.com/webhook-pagamento",
+      auto_return: "approved"
+    };
 
-//     const resultado = await mp.preference.create(preferenceData);
+    const resultado = await mercadopago.payment.save(paymentData);
 
-//     reply.send({ id: resultado.body.id });
-//   } catch (erro) {
-//     console.error("Erro ao criar preferência:", erro);
-//     reply.status(500).send({ error: "Erro ao criar a preferência de pagamento." });
-//   }
-// });
+    reply.send({ id: resultado.body.id });
+  } catch (erro) {
+    console.error("Erro ao criar preferência:", erro);
+    reply.status(500).send({ error: "Erro ao criar a preferência de pagamento." });
+  }
+});
 
 fastify.post('/pagamento-cartao', async (req, reply) => {
   console.log("📦 Dados recebidos no backend:", req.body); 
@@ -439,12 +436,12 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    const response = await payment.create({ body: paymentData });
+    const resultado = await mercadopago.payment.save(paymentData);
 
-    const statusPagamento = response.body.status;
-    const idPagamento = response.body.id;
-
-    console.log("✅ Pagamento criado:", response.body);
+    const statusPagamento = resultado.body.status;
+    const idPagamento = resultado.body.id;
+    
+    console.log("✅ Pagamento criado:", resultado.body);    
 
     reply.send({ status: statusPagamento, id: idPagamento });
 

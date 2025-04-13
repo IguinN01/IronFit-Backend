@@ -407,6 +407,7 @@ fastify.post('/checkout', async (req, reply) => {
 
 fastify.post('/pagamento-cartao', async (req, reply) => {
   console.log("📦 Dados recebidos no backend:", req.body);
+  console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
 
   try {
     const {
@@ -448,8 +449,17 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
     reply.send({ status: statusPagamento, id: idPagamento });
 
   } catch (erro) {
-    console.error('❌ Erro ao processar pagamento com cartão:', erro);
-    reply.status(500).send({ error: 'Erro ao processar o pagamento.' });
+    console.error('❌ Erro ao processar pagamento com cartão:', {
+      message: erro.message,
+      status: erro.status,
+      cause: erro.cause,
+      body: erro?.response?.body,
+    });
+
+    reply.status(500).send({
+      error: 'Erro ao processar o pagamento.',
+      detalhes: erro.message || erro
+    });
   }
 });
 

@@ -424,7 +424,6 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       !payment_method_id ||
       !issuer_id ||
       !transaction_amount ||
-      !installments ||
       !payer?.email ||
       !payer?.identification?.type ||
       !payer?.identification?.number
@@ -457,7 +456,8 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
     return reply.send({
       status: response.body.status,
       id: response.body.id,
-      detail: response.body.status_detail
+      detail: response.body.status_detail,
+      message: "Pagamento processado com sucesso."
     });
 
   } catch (erro) {

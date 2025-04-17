@@ -18,8 +18,6 @@ const mp = new MercadoPagoConfig({
 
 const payment = new Payment(mp);
 
-const jwt = require('jsonwebtoken');
-
 const { Pool } = pkg;
 const fastify = Fastify();
 

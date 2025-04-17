@@ -476,21 +476,21 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
   }
 });
 
-fastify.addHook('onRequest', async (request, reply) => {
-  const authHeader = request.headers.authorization;
+// fastify.addHook('onRequest', async (request, reply) => {
+//   const authHeader = request.headers.authorization;
 
-  if (!authHeader) {
-    return reply.status(401).send({ error: 'Token ausente' });
-  }
+//   if (!authHeader) {
+//     return reply.status(401).send({ error: 'Token ausente' });
+//   }
 
-  try {
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-    request.user = decoded;
-  } catch (err) {
-    return reply.status(401).send({ error: 'Token inválido' });
-  }
-});
+//   try {
+//     const token = authHeader.split(' ')[1];
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+//     request.user = decoded;
+//   } catch (err) {
+//     return reply.status(401).send({ error: 'Token inválido' });
+//   }
+// });
 
 fastify.post('/carrinho', async (request, reply) => {
   const userId = request.user?.id;

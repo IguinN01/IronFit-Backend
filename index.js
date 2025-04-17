@@ -18,6 +18,8 @@ const mp = new MercadoPagoConfig({
 
 const payment = new Payment(mp);
 
+const jwt = require('jsonwebtoken');
+
 const { Pool } = pkg;
 const fastify = Fastify();
 
@@ -473,6 +475,44 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       error: 'Erro ao processar o pagamento.',
       detalhes: erro.message || erro
     });
+  }
+});
+
+fastify.addHook('onRequest', async (request, reply) => {
+  const authHeader = request.headers.authorization;
+
+  if (!authHeader) {
+    return reply.status(401).send({ error: 'Token ausente' });
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+    request.user = decoded;
+  } catch (err) {
+    return reply.status(401).send({ error: 'Token inválido' });
+  }
+});
+
+fastify.post('/carrinho', async (request, reply) => {
+  const userId = request.user?.id;
+
+  if (!userId) {
+    return reply.status(400).send({ error: 'Usuário não autenticado' });
+  }
+
+  const { produtos } = request.body;
+
+  try {
+    for (const item of produtos) {
+      await pool.query(
+        'INSERT INTO carrinho (IDUsuario, IDProduto, quantidade) VALUES ($1, $2, $3)',
+        [userId, item.idProduto, item.quantidade]
+      );
+    }
+    reply.send({ mensagem: 'Produtos adicionados ao carrinho com sucesso!' });
+  } catch (err) {
+    reply.status(500).send({ error: 'Erro ao adicionar produtos ao carrinho' });
   }
 });
 

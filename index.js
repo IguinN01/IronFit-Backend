@@ -48,6 +48,22 @@ fastify.register(cors, {
   credentials: true
 });
 
+// fastify.addHook('onRequest', async (request, reply) => {
+//   const authHeader = request.headers.authorization;
+
+//   if (!authHeader) {
+//     return reply.status(401).send({ error: 'Token ausente' });
+//   }
+
+//   try {
+//     const token = authHeader.split(' ')[1];
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     request.user = decoded;
+//   } catch (err) {
+//     return reply.status(401).send({ error: 'Token inválido' });
+//   }
+// });
+
 fastify.get('/', async (req, reply) => {
   reply.send({ message: 'API IronFit funcionando! Use /produtos para acessar os produtos.' });
 });
@@ -407,35 +423,40 @@ fastify.post('/checkout', async (req, reply) => {
 
 fastify.post('/pagamento-cartao', async (req, reply) => {
   console.log("📦 Dados recebidos no backend:", req.body);
-  console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
+  console.log("🔐 MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
 
   try {
     const {
       token,
       payment_method_id,
+      paymentMethodId,
       issuer_id,
+      issuerId,
       transaction_amount,
+      amount,
       installments,
       payer
     } = req.body;
 
+    // Verificação básica
     if (
       !token ||
-      !payment_method_id ||
-      !issuer_id ||
-      !transaction_amount ||
+      !(payment_method_id || paymentMethodId) ||
+      !(issuer_id || issuerId) ||
+      !(transaction_amount || amount) ||
+      !installments ||
       !payer?.email ||
       !payer?.identification?.type ||
       !payer?.identification?.number
     ) {
-      return reply.status(400).send({ error: 'Dados de pagamento incompletos.' });
+      return reply.status(400).send({ error: '❌ Dados de pagamento incompletos ou inválidos.' });
     }
 
     const paymentData = {
       token,
-      payment_method_id,
-      issuer_id,
-      transaction_amount: parseFloat(transaction_amount),
+      payment_method_id: payment_method_id || paymentMethodId,
+      issuer_id: issuer_id || issuerId,
+      transaction_amount: parseFloat(transaction_amount || amount),
       installments: parseInt(installments),
       description: "Compra IronFit",
       payer: {
@@ -447,50 +468,47 @@ fastify.post('/pagamento-cartao', async (req, reply) => {
       }
     };
 
-    console.log("📦 Payload enviado ao MercadoPago:", paymentData);
+    console.log("➡️ Payload enviado ao Mercado Pago:", paymentData);
 
     const response = await payment.create({ body: paymentData });
 
-    console.log("✅ Pagamento criado:", response.body);
+    if (!response || !response.body) {
+      console.error("❌ Resposta do Mercado Pago inválida:", response);
+      return reply.status(502).send({ error: 'Resposta inválida do Mercado Pago.' });
+    }
+
+    const { status, id, status_detail } = response.body;
+
+    console.log("✅ Pagamento criado com sucesso:", {
+      status,
+      id,
+      status_detail
+    });
 
     return reply.send({
-      status: response.body.status,
-      id: response.body.id,
-      detail: response.body.status_detail,
+      status,
+      id,
+      detail: status_detail,
       message: "Pagamento processado com sucesso."
     });
 
   } catch (erro) {
+    const erroBody = erro.response?.body || null;
+
     console.error('❌ Erro ao processar pagamento com cartão:', {
       message: erro.message,
       status: erro.status,
       cause: erro.cause,
-      response_body: erro.response?.body,
+      response_body: erroBody,
       full_error: erro
     });
 
     return reply.status(500).send({
       error: 'Erro ao processar o pagamento.',
-      detalhes: erro.message || erro
+      detalhes: erro.message || JSON.stringify(erroBody) || 'Erro desconhecido'
     });
   }
 });
-
-// fastify.addHook('onRequest', async (request, reply) => {
-//   const authHeader = request.headers.authorization;
-
-//   if (!authHeader) {
-//     return reply.status(401).send({ error: 'Token ausente' });
-//   }
-
-//   try {
-//     const token = authHeader.split(' ')[1];
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-//     request.user = decoded;
-//   } catch (err) {
-//     return reply.status(401).send({ error: 'Token inválido' });
-//   }
-// });
 
 fastify.post('/carrinho', async (request, reply) => {
   const userId = request.user?.id;

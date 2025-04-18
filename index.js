@@ -437,7 +437,7 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
   } = request.body;
 
   try {
-    const pagamento = await mercadopago.payment.create({
+    const pagamento = await payment.create({
       transaction_amount: parseFloat(amount),
       token,
       installments: parseInt(installments),

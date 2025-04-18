@@ -421,91 +421,72 @@ fastify.post('/checkout', async (req, reply) => {
   }
 });
 
-fastify.post('/pagamento-cartao', async (req, reply) => {
-  console.log("📦 Dados recebidos no backend:", req.body);
-  console.log("🔐 MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
+fastify.post('/pagamento-cartao', async (request, reply) => {
+  const mercadopago = require('mercadopago');
+
+  mercadopago.configure({
+    access_token: process.env.MERCADO_PAGO_TOKEN,
+  });
 
   try {
     const {
       token,
       payment_method_id,
-      paymentMethodId,
       issuer_id,
-      issuerId,
       transaction_amount,
-      amount,
       installments,
-      payer
-    } = req.body;
+      payer,
+    } = request.body;
 
-    // Verificação básica
-    if (
-      !token ||
-      !(payment_method_id || paymentMethodId) ||
-      !(issuer_id || issuerId) ||
-      !(transaction_amount || amount) ||
-      !installments ||
-      !payer?.email ||
-      !payer?.identification?.type ||
-      !payer?.identification?.number
-    ) {
-      return reply.status(400).send({ error: '❌ Dados de pagamento incompletos ou inválidos.' });
-    }
+    console.log('📦 Dados recebidos no backend:', request.body);
 
     const paymentData = {
       token,
-      payment_method_id: payment_method_id || paymentMethodId,
-      issuer_id: issuer_id || issuerId,
-      transaction_amount: parseFloat(transaction_amount || amount),
-      installments: parseInt(installments),
-      description: "Compra IronFit",
+      payment_method_id,
+      issuer_id,
+      transaction_amount: Number(transaction_amount),
+      installments: Number(installments),
+      description: 'Compra IronFit',
       payer: {
         email: payer.email,
         identification: {
           type: payer.identification.type,
-          number: payer.identification.number
-        }
-      }
+          number: payer.identification.number,
+        },
+      },
     };
 
-    console.log("➡️ Payload enviado ao Mercado Pago:", paymentData);
+    console.log('➡️ Payload enviado ao Mercado Pago:', paymentData);
 
-    const response = await payment.create({ body: paymentData });
+    const response = await mercadopago.payment.create(paymentData);
+    const pagamento = response.body;
 
-    if (!response || !response.body) {
-      console.error("❌ Resposta do Mercado Pago inválida:", response);
-      return reply.status(502).send({ error: 'Resposta inválida do Mercado Pago.' });
+    console.log('✅ Resposta do Mercado Pago:', pagamento);
+
+    if (pagamento.status === 'approved') {
+      return reply.code(200).send({
+        sucesso: true,
+        mensagem: 'Pagamento aprovado!',
+        dados: pagamento,
+      });
+    } else {
+      return reply.code(400).send({
+        sucesso: false,
+        mensagem: `Pagamento não aprovado. Status: ${pagamento.status}`,
+        detalhes: pagamento.status_detail,
+      });
+    }
+  } catch (erro) {
+    console.error('❌ Erro no pagamento:', erro);
+
+    if (erro.response && erro.response.body) {
+      console.error('🧾 Detalhes do erro:', erro.response.body);
     }
 
-    const { status, id, status_detail } = response.body;
-
-    console.log("✅ Pagamento criado com sucesso:", {
-      status,
-      id,
-      status_detail
-    });
-
-    return reply.send({
-      status,
-      id,
-      detail: status_detail,
-      message: "Pagamento processado com sucesso."
-    });
-
-  } catch (erro) {
-    const erroBody = erro.response?.body || null;
-
-    console.error('❌ Erro ao processar pagamento com cartão:', {
-      message: erro.message,
-      status: erro.status,
-      cause: erro.cause,
-      response_body: erroBody,
-      full_error: erro
-    });
-
-    return reply.status(500).send({
-      error: 'Erro ao processar o pagamento.',
-      detalhes: erro.message || JSON.stringify(erroBody) || 'Erro desconhecido'
+    return reply.code(500).send({
+      sucesso: false,
+      mensagem: 'Erro ao processar o pagamento.',
+      erro: erro.message || 'Erro desconhecido',
     });
   }
 });

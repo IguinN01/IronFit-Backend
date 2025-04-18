@@ -422,71 +422,46 @@ fastify.post('/checkout', async (req, reply) => {
 });
 
 fastify.post('/pagamento-cartao', async (request, reply) => {
-  const mercadopago = require('mercadopago');
-
-  mercadopago.configure({
-    access_token: process.env.MERCADO_PAGO_TOKEN,
-  });
+  console.log('📥 Requisição recebida em /pagamento-cartao');
+  const {
+    token,
+    issuerId,
+    paymentMethodId,
+    amount,
+    installments,
+    identificationType,
+    identificationNumber,
+    cardholderEmail,
+    processingMode,
+    merchantAccountId
+  } = request.body;
 
   try {
-    const {
+    const pagamento = await mercadopago.payment.create({
+      transaction_amount: parseFloat(amount),
       token,
-      payment_method_id,
-      issuer_id,
-      transaction_amount,
-      installments,
-      payer,
-    } = request.body;
-
-    console.log('📦 Dados recebidos no backend:', request.body);
-
-    const paymentData = {
-      token,
-      payment_method_id,
-      issuer_id,
-      transaction_amount: Number(transaction_amount),
-      installments: Number(installments),
-      description: 'Compra IronFit',
+      installments: parseInt(installments),
+      payment_method_id: paymentMethodId,
+      issuer_id: issuerId,
       payer: {
-        email: payer.email,
+        email: cardholderEmail,
         identification: {
-          type: payer.identification.type,
-          number: payer.identification.number,
-        },
+          type: identificationType,
+          number: identificationNumber
+        }
       },
-    };
-
-    console.log('➡️ Payload enviado ao Mercado Pago:', paymentData);
-
-    const response = await mercadopago.payment.create(paymentData);
-    const pagamento = response.body;
+      statement_descriptor: "IRONFIT",
+      processing_mode: processingMode || 'aggregator',
+      ...(merchantAccountId && { merchant_account_id: merchantAccountId }) // opcional
+    });
 
     console.log('✅ Resposta do Mercado Pago:', pagamento);
-
-    if (pagamento.status === 'approved') {
-      return reply.code(200).send({
-        sucesso: true,
-        mensagem: 'Pagamento aprovado!',
-        dados: pagamento,
-      });
-    } else {
-      return reply.code(400).send({
-        sucesso: false,
-        mensagem: `Pagamento não aprovado. Status: ${pagamento.status}`,
-        detalhes: pagamento.status_detail,
-      });
-    }
-  } catch (erro) {
-    console.error('❌ Erro no pagamento:', erro);
-
-    if (erro.response && erro.response.body) {
-      console.error('🧾 Detalhes do erro:', erro.response.body);
-    }
-
+    return reply.send({ status: pagamento.body.status, id: pagamento.body.id });
+  } catch (err) {
+    console.error('❌ Erro ao processar pagamento:', err.response?.body || err);
     return reply.code(500).send({
-      sucesso: false,
-      mensagem: 'Erro ao processar o pagamento.',
-      erro: erro.message || 'Erro desconhecido',
+      erro: 'Erro ao processar pagamento',
+      detalhes: err.response?.body?.message || err.message
     });
   }
 });

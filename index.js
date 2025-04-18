@@ -427,7 +427,7 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
     token,
     issuerId,
     paymentMethodId,
-    amount,
+    transaction_amount,
     installments,
     identificationType,
     identificationNumber,
@@ -438,9 +438,9 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
 
   try {
     const pagamento = await payment.create({
-      transaction_amount: parseFloat(amount),
+      transaction_amount: parseFloat(transaction_amount),
       token,
-      installments: parseInt(installments),
+      installments: parseFloat(installments),
       payment_method_id: paymentMethodId,
       issuer_id: issuerId,
       payer: {

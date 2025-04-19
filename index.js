@@ -27,6 +27,7 @@ const pool = new Pool({
 });
 
 fastify.register(formbody);
+fastify.register(require('@fastify/express'));
 
 setInterval(async () => {
   try {
@@ -445,24 +446,34 @@ fastify.post('/carrinho', async (request, reply) => {
 
 fastify.post('/pagamento-cartao', async (request, reply) => {
   console.log('📥 Requisição recebida em /pagamento-cartao');
+
   const {
     token,
     issuerId,
     paymentMethodId,
-    transaction_amount,
     installments,
     identificationType,
     identificationNumber,
     cardholderEmail,
     processingMode,
-    merchantAccountId
+    merchantAccountId,
+    transaction_amount
   } = request.body;
 
+  const parsedAmount = parseFloat(transaction_amount);
+
+  if (!parsedAmount || isNaN(parsedAmount)) {
+    console.error('❌ transaction_amount inválido:', transaction_amount);
+    return reply.code(400).send({ erro: 'transaction_amount inválido' });
+  }
+
   console.log('Dados recebidos:', request.body);
+  console.log('Tipo de transaction_amount:', typeof transaction_amount, transaction_amount);
+  console.log('request.body:', JSON.stringify(request.body, null, 2));
 
   try {
     const pagamento = await payment.create({
-      transaction_amount: parseFloat(transaction_amount),
+      transaction_amount: parsedAmount,
       token,
       installments: parseFloat(installments),
       payment_method_id: paymentMethodId,

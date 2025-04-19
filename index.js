@@ -461,6 +461,8 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
     transaction_amount
   } = request.body;
 
+  const parsedAmount = parseFloat(transaction_amount);
+
   console.log("🧪 Verificando campos:");
   console.log({
     token,
@@ -471,8 +473,6 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
     identificationType,
     identificationNumber
   });
-
-  const parsedAmount = parseFloat(transaction_amount);
 
   if (!token || !paymentMethodId || !issuerId || !parsedAmount || !cardholderEmail || !identificationType || !identificationNumber) {
     console.error("❌ Dados faltando para processar pagamento.");

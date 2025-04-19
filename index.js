@@ -14,7 +14,7 @@ import { Payment, MercadoPagoConfig } from 'mercadopago';
 const { Pool } = pkg;
 const fastify = Fastify();
 
-const client = new MercadoPagoConfig({ accessToken: '<ACCESS_TOKEN>' });
+const client = new MercadoPagoConfig({ accessToken: 'TEST-2223438209198426-040908-597c267bfdabae5f2befb939a4ac8d4d-1185888193' });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

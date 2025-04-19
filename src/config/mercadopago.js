@@ -1,8 +1,7 @@
-import pkg from 'mercadopago';
-const mercadopago = pkg.default || pkg;
+import mercadopago from 'mercadopago';
 
 mercadopago.configure({
-  access_token: "TEST-2223438209198426-040908-597c267bfdabae5f2befb939a4ac8d4d-1185888193"
+  access_token: process.env.MERCADO_PAGO_TOKEN,
 });
 
 export default mercadopago;

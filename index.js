@@ -458,38 +458,47 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
     cardholderEmail,
     processingMode,
     merchantAccountId,
-    amount
+    transaction_amount
   } = request.body;
 
-  const parsedAmount = parseFloat(amount);
+  const parsedAmount = parseFloat(transaction_amount);
 
-  if (!parsedAmount || isNaN(parsedAmount)) {
-    console.error('❌ amount inválido:', amount);
-    return reply.code(400).send({ erro: 'amount inválido' });
+  if (!token || !paymentMethodId || !issuerId || !parsedAmount || !cardholderEmail || !identificationType || !identificationNumber) {
+    console.error("❌ Dados faltando para processar pagamento.");
+    return reply.code(400).send({ erro: "Dados incompletos para processar pagamento" });
+  }
+
+  if (isNaN(parsedAmount)) {
+    console.error('❌ transaction_amount inválido:', transaction_amount);
+    return reply.code(400).send({ erro: 'transaction_amount inválido' });
   }
 
   console.log('Dados recebidos:', request.body);
-  console.log('Tipo de amount:', typeof amount, amount);
+  console.log('Tipo de transaction_amount:', typeof transaction_amount, transaction_amount);
   console.log('request.body:', JSON.stringify(request.body, null, 2));
 
+  const paymentData = {
+    transaction_amount: parsedAmount,
+    token,
+    installments: parseFloat(installments),
+    payment_method_id: paymentMethodId,
+    issuer_id: issuerId,
+    payer: {
+      email: cardholderEmail,
+      identification: {
+        type: identificationType,
+        number: identificationNumber
+      }
+    },
+    statement_descriptor: "IRONFIT",
+    processing_mode: processingMode || 'aggregator',
+    ...(merchantAccountId && { merchant_account_id: merchantAccountId })
+  };
+
+  console.log('🔍 Enviando para o Mercado Pago:', paymentData);
+
   try {
-    const pagamento = await payment.create({
-      amount: parsedAmount,
-      token,
-      installments: parseFloat(installments),
-      payment_method_id: paymentMethodId,
-      issuer_id: issuerId,
-      payer: {
-        email: cardholderEmail,
-        identification: {
-          type: identificationType,
-          number: identificationNumber
-        }
-      },
-      statement_descriptor: "IRONFIT",
-      processing_mode: processingMode || 'aggregator',
-      ...(merchantAccountId && { merchant_account_id: merchantAccountId })
-    });
+    const pagamento = await payment.create(paymentData);
 
     console.log('✅ Resposta do Mercado Pago:', pagamento);
     return reply.send({ status: pagamento.body.status, id: pagamento.body.id });

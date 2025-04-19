@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@fastify/cors": "^11.0.0",
+    "@fastify/express": "^4.0.2",
     "@fastify/formbody": "^8.0.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

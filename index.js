@@ -14,7 +14,7 @@ import crypto from 'crypto';
 
 import mercadopago from './src/config/mercadopago.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
-import authenticate from './plugins/authenticate.js';
+import authenticate from './src/plugins/authenticate.js';
 
 const { Pool } = pkg;
 const fastify = Fastify();

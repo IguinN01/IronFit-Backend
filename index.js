@@ -461,7 +461,12 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
     transaction_amount
   } = request.body;
 
-  const parsedAmount = parseFloat(transaction_amount);
+  const parsedAmount = Number(transaction_amount);
+
+  if (isNaN(parsedAmount)) {
+    console.error('❌ transaction_amount inválido:', transaction_amount);
+    return reply.code(400).send({ erro: 'transaction_amount inválido' });
+  }
 
   console.log("🧪 Verificando campos:");
   console.log({
@@ -489,7 +494,7 @@ fastify.post('/pagamento-cartao', async (request, reply) => {
   console.log('request.body:', JSON.stringify(request.body, null, 2));
 
   const paymentData = {
-    transaction_amount: parsedAmount,
+    transaction_amount: Number(parsedAmount),
     token,
     installments: parseFloat(installments),
     payment_method_id: paymentMethodId,

@@ -439,26 +439,45 @@ fastify.post('/carrinho', async (request, reply) => {
   }
 });
 
-Payment.create({
-  body: {
-    transaction_amount: req.transaction_amount,
-    token: req.token,
-    description: req.description,
-    installments: req.installments,
-    payment_method_id: req.paymentMethodId,
-    issuer_id: req.issuer,
-    payer: {
-      email: req.email,
-      identification: {
-        type: req.identificationType,
-        number: req.number
-      }
-    }
-  },
-  requestOptions: { idempotencyKey: 'TEST-2223438209198426-040908-597c267bfdabae5f2befb939a4ac8d4d-1185888193' }
-})
-  .then((result) => console.log(result))
-  .catch((error) => console.log(error));
+fastify.post('/pagamento', async (req, reply) => {
+  try {
+    const {
+      transaction_amount,
+      token,
+      description,
+      installments,
+      paymentMethodId,
+      issuer,
+      email,
+      identificationType,
+      number
+    } = req.body;
+
+    const result = await Payment.create({
+      body: {
+        transaction_amount,
+        token,
+        description,
+        installments,
+        payment_method_id: paymentMethodId,
+        issuer_id: issuer,
+        payer: {
+          email,
+          identification: {
+            type: identificationType,
+            number
+          }
+        }
+      },
+      requestOptions: { idempotencyKey: crypto.randomUUID() }
+    });
+
+    reply.send(result);
+  } catch (error) {
+    console.error("Erro no pagamento:", error);
+    reply.status(500).send({ error: 'Erro ao processar pagamento' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 fastify.listen({ port: PORT, host: '0.0.0.0' }, err => {

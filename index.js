@@ -10,6 +10,7 @@ import fastifyJWT from '@fastify/jwt';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import pkg from 'pg';
 
 import mercadopago from './src/config/mercadopago.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
@@ -17,6 +18,7 @@ import authenticate from './src/plugins/authenticate.js';
 
 const fastify = Fastify();
 
+const { Pool } = pkg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },

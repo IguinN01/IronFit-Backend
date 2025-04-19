@@ -5,16 +5,19 @@ import Fastify from 'fastify';
 import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
 import fastifyExpress from '@fastify/express';
+import fastifyJWT from '@fastify/jwt';
+
 import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { Payment, MercadoPagoConfig } from 'mercadopago';
+
+import mercadopago from './src/config/mercadopago.js';
+import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
+import authenticate from './plugins/authenticate.js';
 
 const { Pool } = pkg;
 const fastify = Fastify();
-
-const client = new MercadoPagoConfig({ accessToken: 'TEST-2223438209198426-040908-597c267bfdabae5f2befb939a4ac8d4d-1185888193' });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -43,22 +46,6 @@ fastify.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 });
-
-// fastify.addHook('onRequest', async (request, reply) => {
-//   const authHeader = request.headers.authorization;
-
-//   if (!authHeader) {
-//     return reply.status(401).send({ error: 'Token ausente' });
-//   }
-
-//   try {
-//     const token = authHeader.split(' ')[1];
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     request.user = decoded;
-//   } catch (err) {
-//     return reply.status(401).send({ error: 'Token inválido' });
-//   }
-// });
 
 fastify.get('/', async (req, reply) => {
   reply.send({ message: 'API IronFit funcionando! Use /produtos para acessar os produtos.' });
@@ -364,120 +351,13 @@ fastify.get('/produtos/:id', async (req, reply) => {
   }
 });
 
-fastify.put('/usuario/:id/foto', async (req, reply) => {
-  const { id } = req.params;
-  const { novaFoto } = req.body;
-
-  if (!novaFoto) {
-    return reply.status(400).send({ error: 'Nova foto é obrigatória.' });
-  }
-
-  try {
-    await pool.query('UPDATE usuarios SET foto = $1 WHERE id = $2', [novaFoto, id]);
-    return reply.send({ message: 'Foto de perfil atualizada com sucesso.' });
-  } catch (err) {
-    console.error('Erro ao atualizar foto de perfil:', err);
-    reply.status(500).send({ error: 'Erro interno ao atualizar a foto.' });
-  }
+fastify.register(fastifyJWT, {
+  secret: process.env.JWT_SECRET
 });
 
-fastify.post('/checkout', async (req, reply) => {
-  try {
-    const { itens, email, enderecoEntrega } = req.body;
+fastify.register(authenticate);
 
-    if (!Array.isArray(itens) || itens.length === 0) {
-      return reply.status(400).send({ error: "Itens da compra são obrigatórios." });
-    }
-
-    const preferenceData = {
-      items: itens.map((item) => ({
-        title: item.nome,
-        quantity: item.quantidade,
-        unit_price: Number(item.preco),
-        currency_id: "BRL",
-      })),
-      payer: {
-        email: email,
-      },
-      back_urls: {
-        success: "https://academia-iron.web.app/obrigado",
-        failure: "https://academia-iron.web.app/erro",
-        pending: "https://academia-iron.web.app/pendente"
-      },
-      notification_url: "https://seuservidor.com/webhook-pagamento",
-      auto_return: "approved"
-    };
-
-    const resultado = await mp.preference.create(preferenceData);
-
-    reply.send({ id: resultado.body.id });
-  } catch (erro) {
-    console.error("Erro ao criar preferência:", erro);
-    reply.status(500).send({ error: "Erro ao criar a preferência de pagamento." });
-  }
-});
-
-fastify.post('/carrinho', async (request, reply) => {
-  const userId = request.user?.id;
-
-  if (!userId) {
-    return reply.status(400).send({ error: 'Usuário não autenticado' });
-  }
-
-  const { produtos } = request.body;
-
-  try {
-    for (const item of produtos) {
-      await pool.query(
-        'INSERT INTO carrinho (IDUsuario, IDProduto, quantidade) VALUES ($1, $2, $3)',
-        [userId, item.idProduto, item.quantidade]
-      );
-    }
-    reply.send({ mensagem: 'Produtos adicionados ao carrinho com sucesso!' });
-  } catch (err) {
-    reply.status(500).send({ error: 'Erro ao adicionar produtos ao carrinho' });
-  }
-});
-
-fastify.post('/pagamento', async (req, reply) => {
-  try {
-    const {
-      transaction_amount,
-      token,
-      description,
-      installments,
-      paymentMethodId,
-      issuer,
-      email,
-      identificationType,
-      number
-    } = req.body;
-
-    const result = await Payment.create({
-      body: {
-        transaction_amount,
-        token,
-        description,
-        installments,
-        payment_method_id: paymentMethodId,
-        issuer_id: issuer,
-        payer: {
-          email,
-          identification: {
-            type: identificationType,
-            number
-          }
-        }
-      },
-      requestOptions: { idempotencyKey: crypto.randomUUID() }
-    });
-
-    reply.send(result);
-  } catch (error) {
-    console.error("Erro no pagamento:", error);
-    reply.status(500).send({ error: 'Erro ao processar pagamento' });
-  }
-});
+fastify.register(pagamentoCreditoRoutes);
 
 const PORT = process.env.PORT || 3000;
 fastify.listen({ port: PORT, host: '0.0.0.0' }, err => {

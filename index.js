@@ -7,7 +7,6 @@ import cors from '@fastify/cors';
 import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
 
-import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';

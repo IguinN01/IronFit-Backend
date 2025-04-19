@@ -1,8 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
-
 import Fastify from 'fastify';
 import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
@@ -11,16 +9,12 @@ import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
-
-const mp = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_TOKEN
-});
-
-const payment = new Payment(mp);
+import { Payment, MercadoPagoConfig } from 'mercadopago';
 
 const { Pool } = pkg;
 const fastify = Fastify();
+
+const client = new MercadoPagoConfig({ accessToken: '<ACCESS_TOKEN>' });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -445,87 +439,26 @@ fastify.post('/carrinho', async (request, reply) => {
   }
 });
 
-fastify.post('/pagamento-cartao', async (request, reply) => {
-  console.log('📥 Requisição recebida em /pagamento-cartao');
-
-  const {
-    token,
-    issuerId,
-    paymentMethodId,
-    installments,
-    identificationType,
-    identificationNumber,
-    cardholderEmail,
-    processingMode,
-    merchantAccountId,
-    transaction_amount
-  } = request.body;
-
-  const parsedAmount = Number(transaction_amount);
-
-  if (isNaN(parsedAmount)) {
-    console.error('❌ transaction_amount inválido:', transaction_amount);
-    return reply.code(400).send({ erro: 'transaction_amount inválido' });
-  }
-
-  console.log("🧪 Verificando campos:");
-  console.log({
-    token,
-    issuerId,
-    paymentMethodId,
-    parsedAmount,
-    cardholderEmail,
-    identificationType,
-    identificationNumber
-  });
-
-  if (!token || !paymentMethodId || !issuerId || !parsedAmount || !cardholderEmail || !identificationType || !identificationNumber) {
-    console.error("❌ Dados faltando para processar pagamento.");
-    return reply.code(400).send({ erro: "Dados incompletos para processar pagamento" });
-  }
-
-  if (isNaN(parsedAmount)) {
-    console.error('❌ transaction_amount inválido:', transaction_amount);
-    return reply.code(400).send({ erro: 'transaction_amount inválido' });
-  }
-
-  console.log('Dados recebidos:', request.body);
-  console.log('Tipo de transaction_amount:', typeof transaction_amount, transaction_amount);
-  console.log('request.body:', JSON.stringify(request.body, null, 2));
-
-  const paymentData = {
-    transaction_amount: Number(parsedAmount),
-    token,
-    installments: parseFloat(installments),
-    payment_method_id: paymentMethodId,
-    issuer_id: issuerId,
+payment.create({
+  body: {
+    transaction_amount: req.transaction_amount,
+    token: req.token,
+    description: req.description,
+    installments: req.installments,
+    payment_method_id: req.paymentMethodId,
+    issuer_id: req.issuer,
     payer: {
-      email: cardholderEmail,
+      email: req.email,
       identification: {
-        type: identificationType,
-        number: identificationNumber
+        type: req.identificationType,
+        number: req.number
       }
-    },
-    statement_descriptor: "IRONFIT",
-    processing_mode: processingMode || 'aggregator',
-    ...(merchantAccountId && { merchant_account_id: merchantAccountId })
-  };
-
-  console.log('🔍 Enviando para o Mercado Pago:', paymentData);
-
-  try {
-    const pagamento = await payment.create(paymentData);
-
-    console.log('✅ Resposta do Mercado Pago:', pagamento);
-    return reply.send({ status: pagamento.body.status, id: pagamento.body.id });
-  } catch (err) {
-    console.error('❌ Erro ao processar pagamento:', err.response?.body || err);
-    return reply.code(500).send({
-      erro: 'Erro ao processar pagamento',
-      detalhes: err.response?.body?.message || err.message
-    });
-  }
-});
+    }
+  },
+  requestOptions: { idempotencyKey: '<SOME_UNIQUE_VALUE>' }
+})
+  .then((result) => console.log(result))
+  .catch((error) => console.log(error));
 
 const PORT = process.env.PORT || 3000;
 fastify.listen({ port: PORT, host: '0.0.0.0' }, err => {

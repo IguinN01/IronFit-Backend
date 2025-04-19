@@ -439,7 +439,7 @@ fastify.post('/carrinho', async (request, reply) => {
   }
 });
 
-payment.create({
+Payment.create({
   body: {
     transaction_amount: req.transaction_amount,
     token: req.token,
@@ -455,7 +455,7 @@ payment.create({
       }
     }
   },
-  requestOptions: { idempotencyKey: '<SOME_UNIQUE_VALUE>' }
+  requestOptions: { idempotencyKey: 'TEST-2223438209198426-040908-597c267bfdabae5f2befb939a4ac8d4d-1185888193' }
 })
   .then((result) => console.log(result))
   .catch((error) => console.log(error));

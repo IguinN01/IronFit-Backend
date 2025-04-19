@@ -6,6 +6,7 @@ console.log("MERCADO_PAGO_TOKEN:", process.env.MERCADO_PAGO_TOKEN);
 import Fastify from 'fastify';
 import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
+import fastifyExpress from '@fastify/express';
 import pkg from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -27,7 +28,7 @@ const pool = new Pool({
 });
 
 fastify.register(formbody);
-fastify.register(require('@fastify/express'));
+fastify.register(fastifyExpress);
 
 setInterval(async () => {
   try {

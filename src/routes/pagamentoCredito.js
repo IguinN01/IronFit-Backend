@@ -1,8 +1,11 @@
 import mercadopago from '../config/mercadopago.js';
 
 export default async function pagamentoCreditoRoutes(fastify, opts) {
+
+  console.log('authenticate disponível?', typeof fastify.authenticate);
+
   fastify.post('/pagamento-credito', {
-    preHandler: [fastify.authenticate] 
+    preHandler: [fastify.authenticate]
   }, async (request, reply) => {
     try {
       const {

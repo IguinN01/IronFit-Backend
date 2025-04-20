@@ -1,9 +1,9 @@
-export default async function (fastify, opts) {
+export default async function (fastify) {
   fastify.decorate("authenticate", async function (request, reply) {
     try {
       await request.jwtVerify();
     } catch (err) {
-      reply.code(401).send({ erro: 'Token inválido ou ausente' });
+      reply.send(err);
     }
   });
 }

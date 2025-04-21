@@ -386,14 +386,16 @@ const start = async () => {
         const { id, point_of_interaction } = pagamento.response;
 
         const qrCodeBase64 = point_of_interaction?.transaction_data?.qr_code_base64;
+        const pixCopiaECola = point_of_interaction?.transaction_data?.qr_code;
 
-        if (!qrCodeBase64) {
-          return reply.status(500).send({ mensagem: 'QR Code não encontrado na resposta do Mercado Pago' });
+        if (!qrCodeBase64 || !pixCopiaECola) {
+          return reply.status(500).send({ mensagem: 'Dados do Pix não encontrados na resposta do Mercado Pago' });
         }
 
         return reply.send({
           id,
-          qrCodeBase64
+          qrCodeBase64,
+          pixCopiaECola
         });
 
       } catch (erro) {

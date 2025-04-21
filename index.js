@@ -34,6 +34,10 @@ const start = async () => {
       ssl: { rejectUnauthorized: false },
     });
 
+    mercadopago.configure({
+      access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
+    });
+
     setInterval(async () => {
       try {
         await pool.query('SELECT 1');
@@ -359,10 +363,16 @@ const start = async () => {
     });
 
     fastify.post('/pagamento-pix', { preHandler: [verificaJWT] }, async (request, reply) => {
-      const {
-        amount,
-        email
-      } = request.body;
+      const { amount } = request.body;
+      const email = request.user?.email;
+
+      if (!amount || isNaN(amount)) {
+        return reply.status(400).send({ mensagem: 'Valor inválido do pagamento (amount)' });
+      }
+
+      if (!email) {
+        return reply.status(400).send({ mensagem: 'E-mail do usuário não encontrado no token' });
+      }
 
       try {
         const pagamento = await mercadopago.payment.create({
@@ -377,11 +387,14 @@ const start = async () => {
         return reply.send(pagamento.response);
       } catch (erro) {
         console.error('Erro ao processar pagamento Pix:', erro);
-        return reply.status(500).send({ mensagem: 'Erro ao processar pagamento Pix' });
+        return reply.status(500).send({
+          mensagem: 'Erro ao processar pagamento Pix',
+          detalhes: erro.response ?? erro.message
+        });
       }
     });
 
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 4000;
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`🟢 Servidor rodando na porta ${PORT}`);
   } catch (err) {
@@ -394,5 +407,5 @@ start();
 
 // git status
 // git add .
-// git commit -m "000"
+// git commit -m "110"
 // git push origin main

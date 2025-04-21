@@ -356,6 +356,32 @@ const start = async () => {
       }
     });
 
+    fastify.post('/pagamento-pix', { preHandler: [verificaJWT] }, async (req, reply) => {
+      const { email, amount } = req.body;
+    
+      try {
+        const pagamento = await mercadopago.payment.create({
+          transaction_amount: Number(amount),
+          description: "Compra na IronFit",
+          payment_method_id: "pix",
+          payer: {
+            email
+          }
+        });
+    
+        return reply.send({
+          qrCodeBase64: pagamento.response.point_of_interaction.transaction_data.qr_code_base64,
+          qrCode: pagamento.response.point_of_interaction.transaction_data.qr_code,
+          id: pagamento.response.id,
+          status: pagamento.response.status
+        });
+    
+      } catch (erro) {
+        console.error("Erro ao criar pagamento PIX:", erro);
+        return reply.status(500).send({ erro: "Erro ao processar pagamento com Pix" });
+      }
+    });    
+
     const PORT = process.env.PORT || 3000;
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`🟢 Servidor rodando na porta ${PORT}`);

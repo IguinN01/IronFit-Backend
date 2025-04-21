@@ -1,21 +1,27 @@
-// auth/autenticacao.js
 import jwt from 'jsonwebtoken';
 
-export function verificaJWT(req, res, done) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    res.status(401).send({ mensagem: 'Token não fornecido' });
-    return;
-  }
-
-  const token = authHeader.split(' ')[1];
-
+export async function verificaJWT(request, reply) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = decoded;
-    done();
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return reply.status(401).send({ mensagem: 'Token não fornecido' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    const decoded = jwt.decode(token, { complete: true });
+
+    if (decoded?.payload?.iss?.includes('google.com')) {
+      request.user = decoded.payload;
+      return;
+    }
+
+    const usuario = jwt.verify(token, process.env.JWT_SECRET);
+    request.user = usuario;
+
   } catch (erro) {
-    res.status(401).send({ mensagem: 'Token inválido' });
+    console.error('Erro ao verificar token:', erro);
+    reply.status(401).send({ mensagem: 'Token inválido ou expirado' });
   }
 }

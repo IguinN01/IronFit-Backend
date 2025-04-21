@@ -364,14 +364,14 @@ const start = async () => {
 
     fastify.post('/pagamento-pix', { preHandler: [verificaJWT] }, async (request, reply) => {
       const { amount } = request.body;
-      const email = request.user?.email;
+      const email = request.user?.email || request.body.email;
 
       if (!amount || isNaN(amount)) {
-        return reply.status(400).send({ mensagem: 'Valor inválido do pagamento (amount)' });
+        return reply.status(400).send({ mensagem: 'Valor do pagamento inválido' });
       }
 
       if (!email) {
-        return reply.status(400).send({ mensagem: 'E-mail do usuário não encontrado no token' });
+        return reply.status(400).send({ mensagem: 'E-mail do usuário é obrigatório' });
       }
 
       try {
@@ -379,17 +379,27 @@ const start = async () => {
           transaction_amount: Number(amount),
           description: 'Compra via Pix - IronFit',
           payment_method_id: 'pix',
-          payer: {
-            email
-          }
+          payer: { email }
         });
 
-        return reply.send(pagamento.response);
+        const { id, point_of_interaction } = pagamento.response;
+
+        const qrCodeBase64 = point_of_interaction?.transaction_data?.qr_code_base64;
+
+        if (!qrCodeBase64) {
+          return reply.status(500).send({ mensagem: 'QR Code não encontrado na resposta do Mercado Pago' });
+        }
+
+        return reply.send({
+          id,
+          qrCodeBase64
+        });
+
       } catch (erro) {
         console.error('Erro ao processar pagamento Pix:', erro);
         return reply.status(500).send({
           mensagem: 'Erro ao processar pagamento Pix',
-          detalhes: erro.response ?? erro.message
+          detalhes: erro.response?.message || erro.message
         });
       }
     });

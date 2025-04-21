@@ -7,6 +7,8 @@ import cors from '@fastify/cors';
 import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
 
+import { verificaJWT } from './src/auth/autenticacao.js';
+
 import mercadopago from './src/config/mercadopago.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
 import authenticate from './src/plugins/authenticate.js';

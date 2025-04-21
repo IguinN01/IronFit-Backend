@@ -50,6 +50,7 @@ const start = async () => {
     fastify.register(cors, {
       origin: [
         "http://localhost:3000",
+        "http://192.168.0.225:3000",
         "https://academia-iron.web.app",
         "https://iron-fit-fontend.vercel.app",
         "https://academia-frontend-ten.vercel.app"

@@ -1,11 +1,11 @@
 import mercadopago from '../config/mercadopago.js';
+import { enviarEmail } from '../utils/email.js';
 
 export default async function pagamentoCreditoRoutes(fastify, opts) {
 
   console.log('authenticate disponível?', typeof fastify.authenticate);
 
-  fastify.post('/pagamento-credito', {
-  }, async (request, reply) => {
+  fastify.post('/pagamento-credito', async (request, reply) => {
     try {
       const {
         token,
@@ -38,11 +38,23 @@ export default async function pagamentoCreditoRoutes(fastify, opts) {
         }
       });
 
-      return reply.send({
-        status: pagamento.body.status,
-        status_detail: pagamento.body.status_detail,
-        id: pagamento.body.id
-      });
+      const status = pagamento.body.status;
+      const statusDetail = pagamento.body.status_detail;
+      const pagamentoId = pagamento.body.id;
+
+      if (status === 'approved') {
+        const html = `
+          <h2>Compra realizada com sucesso!</h2>
+          <p>Olá,</p>
+          <p>Recebemos seu pagamento de <strong>R$ ${amount.toFixed(2)}</strong>.</p>
+          <p>ID da transação: <strong>${pagamentoId}</strong></p>
+          <p>Obrigado por comprar com a IronFit! 💪</p>
+        `;
+
+        await enviarEmail(email, 'IronFit - Compra confirmada!', html);
+      }
+
+      return reply.send({ status, statusDetail, id: pagamentoId });
 
     } catch (erro) {
       console.error('Erro ao processar pagamento:', erro);

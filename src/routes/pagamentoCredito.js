@@ -46,7 +46,7 @@ export default async function pagamentoCreditoRoutes(fastify, opts) {
         const html = `
           <h2>Compra realizada com sucesso!</h2>
           <p>Olá,</p>
-          <p>Recebemos seu pagamento de <strong>R$ ${amount.toFixed(2)}</strong>.</p>
+          <p>Recebemos seu pagamento de <strong>R$ ${Number(amount).toFixed(2)}</strong>.</p>
           <p>ID da transação: <strong>${pagamentoId}</strong></p>
           <p>Obrigado por comprar com a IronFit! 💪</p>
         `;

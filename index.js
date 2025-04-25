@@ -407,6 +407,53 @@ const start = async () => {
       }
     });
 
+    fastify.post('/calcular-frete', async (request, reply) => {
+      const { cepDestino, produtos } = request.body;
+
+      const tokenMelhorEnvio = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NTYiLCJqdGkiOiJlYzBmNWQ0M2U4ZmY2NGRiNTIwMmIzMDQxODBlMDQwMWNhZjYwYjg5MGQ3ZjdhOGIzMDc1YjRkNzI3YzhkZjQzNDA5N2U0YzkxMDRkY2Y2NSIsImlhdCI6MTc0NTYwNzA3My42MTYyMTQsIm5iZiI6MTc0NTYwNzA3My42MTYyMTcsImV4cCI6MTc3NzE0MzA3My42MDU0NTksInN1YiI6IjllYzMwMzhiLTkyNzMtNDYzNS04N2JiLWQzZDFjYTE4OGQ0MiIsInNjb3BlcyI6WyJjYXJ0LXJlYWQiLCJjYXJ0LXdyaXRlIiwiY29tcGFuaWVzLXJlYWQiLCJjb21wYW5pZXMtd3JpdGUiLCJjb3Vwb25zLXJlYWQiLCJjb3Vwb25zLXdyaXRlIiwibm90aWZpY2F0aW9ucy1yZWFkIiwib3JkZXJzLXJlYWQiLCJwcm9kdWN0cy1yZWFkIiwicHJvZHVjdHMtZGVzdHJveSIsInByb2R1Y3RzLXdyaXRlIiwicHVyY2hhc2VzLXJlYWQiLCJzaGlwcGluZy1jYWxjdWxhdGUiLCJzaGlwcGluZy1jYW5jZWwiLCJzaGlwcGluZy1jaGVja291dCIsInNoaXBwaW5nLWNvbXBhbmllcyIsInNoaXBwaW5nLWdlbmVyYXRlIiwic2hpcHBpbmctcHJldmlldyIsInNoaXBwaW5nLXByaW50Iiwic2hpcHBpbmctc2hhcmUiLCJzaGlwcGluZy10cmFja2luZyIsImVjb21tZXJjZS1zaGlwcGluZyIsInRyYW5zYWN0aW9ucy1yZWFkIiwidXNlcnMtcmVhZCIsInVzZXJzLXdyaXRlIiwid2ViaG9va3MtcmVhZCIsIndlYmhvb2tzLXdyaXRlIiwid2ViaG9va3MtZGVsZXRlIiwidGRlYWxlci13ZWJob29rIl19.d6FqVG53TllUaUZUYCfw37dcQ0wuvgS1EmV9azCZ0xiDfLMKlKtJYrailLkepJkuiBt2nESEx0Ld2RFCVWSYczXA3K_-SDev_UhCmG-_35l1_p8jPJMYa8lGtY0hFYBQyexYgQRCaMr-TQxx1g_P_PR_-VhTnbo117BYmzeKjVXbakGx-N-u1ANhX7gWk5HLChRkeD81YVorVdGsHppUK2Y5nGRbRqlQ9cyV5tZI5zAMuHrVWqKfuNc0FSCfqDAfRDv0O706k9XjgKUqhvu8XGQMQoiXEilzuJwERrLwVLCPcdS1cop8UmHBUPDkKoCW2foH3F3QluzgAPwFSSWMqiKPBxBH8M44qtQd9Qev4bOP5La-17fskA5ijXm12U99bWgd5OISJvJMFlBGi0NmVDJmk8JS44LNksPdmxhCDe4enjja6YoYs8PVETZNnudObsik9spNNKDKoqsCqgJ-wXqs1FdIjNsnmygci_WbuO4Je7hYoRwmcJhMQMrHOSUyBM1ypicT1vL1835iTTjnh6F2iPmFb6bLBRSvfCKBzYIegneH63vfs5pPPrkndLRNqMx6sekvkiJfqph95JfJADQZ-TiFAxZxzC2VSaJiO8eAoD7G9H7GeT0QdM-kN_zNygyy56V3O2S5bKMidlim1eM7ZskF_fMWwAlI6VIX_6Q';
+
+      const cepOrigem = ' 05266-020';
+
+      const pacotes = produtos.flatMap(produto =>
+        Array.from({ length: produto.quantidade }).map(() => ({
+          weight: produto.peso,
+          width: produto.largura,
+          height: produto.altura,
+          length: produto.comprimento
+        }))
+      );
+
+      try {
+        const response = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${tokenMelhorEnvio}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(
+            pacotes.map(pacote => ({
+              from: { postal_code: cepOrigem },
+              to: { postal_code: cepDestino },
+              package: pacote,
+              options: {
+                insurance_value: 100,
+                receipt: false,
+                own_hand: false
+              },
+              services: [],
+            }))
+          )
+        });
+
+        const resultado = await response.json();
+
+        return reply.send(resultado);
+      } catch (err) {
+        console.error('Erro ao calcular frete:', err);
+        return reply.status(500).send({ erro: 'Erro ao consultar frete' });
+      }
+    });
+
     const PORT = process.env.PORT || 4000;
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`🟢 Servidor rodando na porta ${PORT}`);

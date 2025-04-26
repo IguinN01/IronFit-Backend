@@ -448,8 +448,8 @@ const start = async () => {
           })
         });
 
-        console.log('Resposta da Melhor Envio:', resultado);
         const resultado = await response.json();
+        console.log('Resposta da Melhor Envio:', resultado);
         if (!Array.isArray(resultado)) {
           console.error('Resposta inesperada da Melhor Envio:', resultado);
           return reply.status(502).send({ erro: 'Resposta inesperada da Melhor Envio', detalhes: resultado });

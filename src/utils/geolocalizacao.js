@@ -14,7 +14,7 @@ export async function buscarCoordenadas(cep) {
       addressdetails: 1,
     },
     headers: {
-      'User-Agent': 'SeuProjetoFaculdade/1.0',
+      'User-Agent': 'ironfitacademia05@gmail.com',
     },
   });
 

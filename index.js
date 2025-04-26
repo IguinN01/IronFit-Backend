@@ -52,6 +52,8 @@ const start = async () => {
         "http://localhost:3000",
         "http://192.168.0.225:3000",
         "https://academia-iron.web.app",
+        "https://quiet-mirrors-look.loca.lt",
+        "https://fresh-things-throw.loca.lt",
         "https://iron-fit-fontend.vercel.app",
         "https://academia-frontend-ten.vercel.app"
       ],
@@ -447,7 +449,6 @@ const start = async () => {
 
         const resultado = await response.json();
 
-        // Filtrando apenas a opção de Correios
         const correios = resultado.filter(frete => frete.name.toLowerCase().includes('correios'));
 
         return reply.send(correios);

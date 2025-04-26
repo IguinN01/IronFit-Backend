@@ -8,10 +8,10 @@ import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
 
 import { verificaJWT } from './src/auth/autenticacao.js';
-
 import mercadopago from './src/config/mercadopago.js';
-import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
 import authenticate from './src/plugins/authenticate.js';
+import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
+import freteRoutes from './src/routes/frete.js';
 
 import pg from 'pg';
 const { Pool } = pg;
@@ -28,6 +28,7 @@ const start = async () => {
 
     fastify.register(authenticate);
     fastify.register(pagamentoCreditoRoutes);
+    fastify.register(freteRoutes);
 
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -50,7 +51,6 @@ const start = async () => {
     fastify.register(cors, {
       origin: [
         "http://localhost:3000",
-        "https://iron-fit.loca.lt",
         "http://192.168.0.225:3000",
         "https://academia-iron.web.app",
         "https://iron-fit-fontend.vercel.app",
@@ -405,42 +405,6 @@ const start = async () => {
           mensagem: 'Erro ao processar pagamento Pix',
           detalhes: erro.response?.message || erro.message
         });
-      }
-    });
-
-    fastify.post('/calcular-frete', async (request, reply) => {
-      const { cepDestino, produtos } = request.body;
-      if (!cepDestino || !produtos || !Array.isArray(produtos) || produtos.length === 0) {
-        return reply.status(400).send({ erro: 'CEP de destino e produtos são obrigatórios' });
-      }
-
-      const tokenMelhorEnvio = process.env.MELHOR_ENVIO_TOKEN;
-
-      const cepOrigem = '05266-020';
-
-      const pacotes = produtos.flatMap(produto =>
-        Array.from({ length: produto.quantidade }).map(() => ({
-          weight: produto.peso,
-          width: produto.largura,
-          height: produto.altura,
-          length: produto.comprimento
-        }))
-      );
-
-      try {
-        const responseText = await response.text();
-        console.log('Texto da resposta:', responseText);
-
-        let resultado;
-        try {
-          resultado = JSON.parse(responseText);
-        } catch (e) {
-          console.error('Resposta não é um JSON válido:', responseText);
-          return reply.status(502).send({ erro: 'Resposta inválida da Melhor Envio', detalhes: responseText });
-        }
-      } catch (err) {
-        console.error('Erro ao calcular frete:', err);
-        return reply.status(500).send({ erro: 'Erro ao consultar frete' });
       }
     });
 

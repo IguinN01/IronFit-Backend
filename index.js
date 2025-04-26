@@ -428,7 +428,7 @@ const start = async () => {
       );
 
       try {
-        const response = await fetch('https://www.melhorenvio.com.br/api/v2/calculator', {
+        const response = await fetch('https://sandbox.melhorenvio.com.br/api/v2/calculator', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${tokenMelhorEnvio}`,

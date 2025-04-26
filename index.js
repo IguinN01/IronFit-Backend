@@ -428,36 +428,16 @@ const start = async () => {
       );
 
       try {
-        const response = await fetch('https://sandbox.melhorenvio.com.br/api/v2/calculator', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${tokenMelhorEnvio}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: { postal_code: cepOrigem },
-            to: { postal_code: cepDestino },
-            products: pacotes,
-            services: ["2"],
-            options: {
-              insurance_value: 100,
-              receipt: false,
-              own_hand: false,
-              collect: false
-            }
-          })
-        });
+        const responseText = await response.text();
+        console.log('Texto da resposta:', responseText);
 
-        const resultado = await response.json();
-        console.log('Resposta da Melhor Envio:', resultado);
-        if (!Array.isArray(resultado)) {
-          console.error('Resposta inesperada da Melhor Envio:', resultado);
-          return reply.status(502).send({ erro: 'Resposta inesperada da Melhor Envio', detalhes: resultado });
+        let resultado;
+        try {
+          resultado = JSON.parse(responseText);
+        } catch (e) {
+          console.error('Resposta não é um JSON válido:', responseText);
+          return reply.status(502).send({ erro: 'Resposta inválida da Melhor Envio', detalhes: responseText });
         }
-
-        const correios = resultado.filter(frete => frete.name.toLowerCase().includes('correios'));
-
-        return reply.send(correios);
       } catch (err) {
         console.error('Erro ao calcular frete:', err);
         return reply.status(500).send({ erro: 'Erro ao consultar frete' });

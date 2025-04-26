@@ -448,10 +448,11 @@ const start = async () => {
           })
         });
 
+        console.log('Resposta da Melhor Envio:', resultado);
         const resultado = await response.json();
-        if (!response.ok) {
-          console.error('Erro na API Melhor Envio:', resultado);
-          return reply.status(502).send({ erro: 'Erro ao consultar serviço de frete', detalhes: resultado });
+        if (!Array.isArray(resultado)) {
+          console.error('Resposta inesperada da Melhor Envio:', resultado);
+          return reply.status(502).send({ erro: 'Resposta inesperada da Melhor Envio', detalhes: resultado });
         }
 
         const correios = resultado.filter(frete => frete.name.toLowerCase().includes('correios'));
@@ -474,7 +475,7 @@ const start = async () => {
 
 start();
 
-// 'git status'
+// git status
 // git add .
 // git commit -m "120"
 // git push origin main

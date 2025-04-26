@@ -16,8 +16,8 @@ async function freteRoutes(fastify, options) {
 
       const distancia = calcularDistancia(origem.lat, origem.lon, destino.lat, destino.lon);
 
-      let frete = distancia * 1.2;
-      if (frete < 15) frete = 15; 
+      let frete = distancia * 0.8;
+      if (frete < 7.50) frete = 7.50; 
 
       return { frete: frete.toFixed(2), distancia: distancia.toFixed(2) + ' km' };
     } catch (error) {

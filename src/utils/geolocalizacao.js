@@ -1,22 +1,27 @@
 import axios from 'axios';
 
-const ORS_API_KEY = '5b3ce3597851110001cf62488b67b3152f6f42f3990cc82d1befe873';
+export async function buscarCoordenadas(cep) {
+  const enderecoResponse = await axios.get(`https://brasilapi.com.br/api/cep/v1/${cep}`);
 
-export async function calcularDistanciaReal(origem, destino) {
-  const response = await axios.post('https://api.openrouteservice.org/v2/directions/driving-car', {
-    coordinates: [
-      [origem.lon, origem.lat],
-      [destino.lon, destino.lat]
-    ]
-  }, {
+  const { city, state, street } = enderecoResponse.data;
+
+  const query = `${street ? street + ', ' : ''}${city}, ${state}, Brasil`;
+
+  const response = await axios.get(`https://nominatim.openstreetmap.org/search`, {
+    params: {
+      q: query,
+      format: 'json',
+      addressdetails: 1,
+    },
     headers: {
-      Authorization: ORS_API_KEY,
-      'Content-Type': 'application/json',
-    }
+      'User-Agent': 'ironfitacademia05@gmail.com',
+    },
   });
 
-  const distanciaMetros = response.data.routes[0].summary.distance;
-  const distanciaKm = distanciaMetros / 1000;
+  if (response.data.length === 0) {
+    throw new Error('Endereço não encontrado no Nominatim');
+  }
 
-  return distanciaKm;
+  const { lat, lon } = response.data[0];
+  return { lat: parseFloat(lat), lon: parseFloat(lon) };
 }

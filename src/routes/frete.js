@@ -1,5 +1,5 @@
 import { buscarCoordenadas } from '../utils/geolocalizacao.js';
-import { calcularDistanciaReal } from '../utils/distanciaReal.js'; // Novo import
+import { calcularDistanciaReal } from '../utils/distanciaReal.js';
 
 async function freteRoutes(fastify, options) {
   fastify.post('/calcular-frete', async (request, reply) => {

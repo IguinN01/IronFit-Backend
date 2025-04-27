@@ -446,14 +446,14 @@ const start = async () => {
             repetitions: planoSelecionado.repeticoes,
             billing_day: 10,
           },
-          back_url: 'http://localhost:3000/perfil', //Trocar para https://academia-iron.web.app/perfil
+          back_url: 'https://academia-iron.web.app/perfil', //Trocar para https://academia-iron.web.app/perfil
           payer_email: email,
         });
 
         return reply.send(preapproval.response);
       } catch (error) {
-        console.error(error);
-        return reply.status(500).send({ error: 'Erro ao criar assinatura.' });
+        console.error('Erro ao criar assinatura:', error?.message || error);
+        return reply.status(500).send({ error: error?.message || 'Erro ao criar assinatura.' });
       }
     });
 

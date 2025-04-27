@@ -408,6 +408,87 @@ const start = async () => {
       }
     });
 
+    fastify.post('/assinatura/criar', async (request, reply) => {
+      try {
+        const { email, nome, plano } = request.body;
+
+        const planos = {
+          'iron-warrior': {
+            valor: 149.99,
+            periodo: 'monthly',
+            repeticoes: 1,
+          },
+          'iron-champion': {
+            valor: 119.99,
+            periodo: 'monthly',
+            repeticoes: 6,
+          },
+          'iron-legend': {
+            valor: 109.99,
+            periodo: 'monthly',
+            repeticoes: 12,
+          },
+        };
+
+        const planoSelecionado = planos[plano];
+
+        if (!planoSelecionado) {
+          return reply.status(400).send({ error: 'Plano inválido.' });
+        }
+
+        const preapproval = await mercadopago.preapproval.create({
+          reason: `Assinatura ${plano.replace('-', ' ').toUpperCase()}`,
+          auto_recurring: {
+            frequency: 1,
+            frequency_type: 'months',
+            transaction_amount: planoSelecionado.valor,
+            currency_id: 'BRL',
+            repetitions: planoSelecionado.repeticoes,
+            billing_day: 10,
+          },
+          back_url: 'http://localhost:3000/perfil', //Trocar para https://academia-iron.web.app/perfil
+          payer_email: email,
+        });
+
+        return reply.send(preapproval.response);
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send({ error: 'Erro ao criar assinatura.' });
+      }
+    });
+
+    fastify.get('/assinatura/listar/:userEmail', async (request, reply) => {
+      try {
+        const { userEmail } = request.params;
+
+        const subscriptions = await mercadopago.preapproval.search({
+          qs: {
+            payer_email: userEmail,
+          },
+        });
+
+        return reply.send(subscriptions.response.results);
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send({ error: 'Erro ao listar assinaturas.' });
+      }
+    });
+
+    fastify.put('/assinatura/cancelar/:assinaturaId', async (request, reply) => {
+      try {
+        const { assinaturaId } = request.params;
+
+        const cancelamento = await mercadopago.preapproval.update(assinaturaId, {
+          status: 'cancelled',
+        });
+
+        return reply.send(cancelamento.response);
+      } catch (error) {
+        console.error(error);
+        return reply.status(500).send({ error: 'Erro ao cancelar assinatura.' });
+      }
+    });
+
     const PORT = process.env.PORT || 4000;
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`🟢 Servidor rodando na porta ${PORT}`);
@@ -420,6 +501,6 @@ const start = async () => {
 start();
 
 // git status
-// 
+// git add .
 // git commit -m "140"
 // git push origin main

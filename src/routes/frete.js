@@ -1,5 +1,5 @@
 import { buscarCoordenadas } from '../utils/geolocalizacao.js';
-import { calcularDistancia } from '../utils/distancia.js';
+import { calcularDistanciaReal } from '../utils/distanciaReal.js'; // Novo import
 
 async function freteRoutes(fastify, options) {
   fastify.post('/calcular-frete', async (request, reply) => {
@@ -14,7 +14,7 @@ async function freteRoutes(fastify, options) {
       const origem = await buscarCoordenadas(cepOrigem);
       const destino = await buscarCoordenadas(cepDestino);
 
-      const distancia = calcularDistancia(origem.lat, origem.lon, destino.lat, destino.lon);
+      const distancia = await calcularDistanciaReal(origem, destino);
 
       let frete = distancia * 0.8;
       if (frete < 7.50) frete = 7.50;

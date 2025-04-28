@@ -12,7 +12,6 @@ import mercadopago from './src/config/mercadopago.js';
 import authenticate from './src/plugins/authenticate.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
 import freteRoutes from './src/routes/frete.js';
-import pedidosRoutes from './src/routes/pedidos.js';
 
 import pg from 'pg';
 const { Pool } = pg;
@@ -30,7 +29,6 @@ const start = async () => {
     fastify.register(authenticate);
     fastify.register(pagamentoCreditoRoutes);
     fastify.register(freteRoutes);
-    fastify.register(pedidosRoutes);
 
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,

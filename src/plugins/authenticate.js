@@ -5,7 +5,7 @@ export default async function authenticate(fastify, opts) {
     try {
       await request.jwtVerify();
     } catch (err) {
-      reply.send(err);
+      reply.status(401).send({ error: 'Token inválido' });
     }
   });
 }

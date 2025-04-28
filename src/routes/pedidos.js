@@ -1,7 +1,6 @@
 async function pedidosRoutes(fastify, options) {
-  const { authenticate } = fastify;
 
-  fastify.post('/pedidos', { preHandler: [authenticate] }, async (request, reply) => {
+  fastify.post('/pedidos', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const { produtos, valor_total } = request.body;
     const userId = request.user.id;
 
@@ -17,7 +16,7 @@ async function pedidosRoutes(fastify, options) {
     return reply.status(201).send(rows[0]);
   });
 
-  fastify.get('/pedidos/recentes', { preHandler: [authenticate] }, async (request, reply) => {
+  fastify.get('/pedidos/recentes', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const userId = request.user.id;
 
     const { rows } = await fastify.pg.query(

@@ -33,4 +33,4 @@ async function pedidosRoutes(fastify, options) {
   });
 }
 
-module.exports = pedidosRoutes;
+export default pedidosRoutes;

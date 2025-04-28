@@ -29,6 +29,7 @@ const start = async () => {
     fastify.register(authenticate);
     fastify.register(pagamentoCreditoRoutes);
     fastify.register(freteRoutes);
+    fastify.register(require('./src/routes/pedidos'));
 
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,

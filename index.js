@@ -40,6 +40,8 @@ const start = async () => {
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
     });
+    
+    fastify.decorate('pg', pool);    
 
     mercadopago.configure({
       access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
@@ -73,9 +75,7 @@ const start = async () => {
     fastify.post("/auth/google", async (req, reply) => {
       console.log("📩 Dados recebidos do Google:", req.body);
 
-      const { nome, email, googleId, foto } = req.body;
-
-      const imagemFinal = foto || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+      const { nome, email, googleId } = req.body;
 
       if (!email || !googleId) {
         return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
@@ -98,8 +98,8 @@ const start = async () => {
         const senhaHash = null;
 
         const novoUsuario = await pool.query(
-          "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3::text, $4) RETURNING id",
-          [nome, email, senhaHash, imagemFinal]
+          "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3::text) RETURNING id",
+          [nome, email, senhaHash]
         );
 
         const userId = novoUsuario.rows[0].id;
@@ -131,11 +131,9 @@ const start = async () => {
 
         const senhaSegura = senha ? await bcrypt.hash(senha, 10) : null;
 
-        const imagemPadrao = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
         const novoUsuario = await pool.query(
-          "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
-          [nome, email, senhaSegura, imagemPadrao]
+          "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id",
+          [nome, email, senhaSegura]
         );
 
         const userId = novoUsuario.rows[0].id;
@@ -214,7 +212,7 @@ const start = async () => {
 
       try {
         const result = await pool.query(
-          'SELECT id, nome, email, foto, criado_em FROM usuarios WHERE id = $1',
+          'SELECT id, nome, email, criado_em FROM usuarios WHERE id = $1',
           [id]
         );
 
@@ -233,7 +231,7 @@ const start = async () => {
       const { email } = req.params;
 
       try {
-        const result = await pool.query('SELECT id, nome, email, foto, criado_em FROM usuarios WHERE email = $1', [email]);
+        const result = await pool.query('SELECT id, nome, email, criado_em FROM usuarios WHERE email = $1', [email]);
 
         if (result.rows.length === 0) {
           return reply.status(404).send({ error: 'Usuário não encontrado' });
@@ -518,7 +516,7 @@ const start = async () => {
 
       try {
         const result = await fastify.pg.query(
-           `SELECT * FROM pedidos WHERE usuarios_id = $1 
+          `SELECT * FROM pedidos WHERE usuarios_id = $1 
             ORDER BY data_pedido DESC LIMIT 3`,
           [usuariosid]
         );
@@ -543,5 +541,5 @@ start();
 
 // git status
 // git add .
-// git commit -m "140"
+// git commit -m "150"
 // git push origin main

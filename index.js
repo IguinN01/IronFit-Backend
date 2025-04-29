@@ -9,7 +9,6 @@ import fastifyJWT from '@fastify/jwt';
 
 import { verificaJWT } from './src/auth/autenticacao.js';
 import mercadopago from './src/config/mercadopago.js';
-import authenticate from './src/plugins/authenticate.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
 import freteRoutes from './src/routes/frete.js';
 
@@ -26,7 +25,14 @@ const start = async () => {
       secret: process.env.JWT_SECRET
     });
 
-    fastify.register(authenticate);
+    fastify.decorate("authenticate", async function (request, reply) {
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        reply.status(401).send({ error: 'Token inválido' });
+      }
+    });
+
     fastify.register(pagamentoCreditoRoutes);
     fastify.register(freteRoutes);
 
@@ -486,6 +492,41 @@ const start = async () => {
       } catch (error) {
         console.error(error);
         return reply.status(500).send({ error: 'Erro ao cancelar assinatura.' });
+      }
+    });
+
+    fastify.post('/pedidos', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+      const { produtos, valor_total } = request.body;
+      const usuariosid = request.user.id;
+
+      try {
+        const result = await fastify.pg.query(
+          `INSERT INTO pedidos (usuarios_id, produtos, valor_total) 
+           VALUES ($1, $2, $3) RETURNING *`,
+          [usuariosid, produtos, valor_total]
+        );
+
+        reply.code(201).send({ success: true, pedido: result.rows[0] });
+      } catch (err) {
+        request.log.error(err);
+        reply.code(500).send({ success: false, message: 'Erro ao registrar pedido.' });
+      }
+    });
+
+    fastify.get('/pedidos/recentes', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+      const usuariosid = request.user.id;
+
+      try {
+        const result = await fastify.pg.query(
+           `SELECT * FROM pedidos WHERE usuarios_id = $1 
+            ORDER BY data_pedido DESC LIMIT 3`,
+          [usuariosid]
+        );
+
+        reply.send(result.rows);
+      } catch (err) {
+        request.log.error(err);
+        reply.code(500).send({ message: 'Erro ao buscar pedidos.' });
       }
     });
 

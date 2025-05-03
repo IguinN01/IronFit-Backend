@@ -499,31 +499,47 @@ const start = async () => {
     });
 
     fastify.post('/pedidos', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-      const { produtos, valor_total } = request.body;
-      const usuariosid = request.user.id;
+      const { produtos, total } = request.body;
+      const usuarioId = request.user.id;
+      const client = await fastify.pg.connect();
 
       try {
-        const result = await fastify.pg.query(
-          `INSERT INTO pedidos (usuarios_id, produtos, valor_total) 
-           VALUES ($1, $2, $3) RETURNING *`,
-          [usuariosid, produtos, valor_total]
-        );
+        await client.query('BEGIN');
 
-        reply.code(201).send({ success: true, pedido: result.rows[0] });
+        const pedidoResult = await client.query(
+          `INSERT INTO pedidos (usuario_id, total) VALUES ($1, $2) RETURNING id`,
+          [usuarioId, total]
+        );
+        const pedidoId = pedidoResult.rows[0].id;
+
+        for (const item of produtos) {
+          await client.query(
+            `INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario)
+              VALUES ($1, $2, $3, $4)`,
+            [pedidoId, item.produto_id, item.quantidade, item.preco_unitario]
+          );
+        }
+
+        await client.query('COMMIT');
+
+        reply.code(201).send({ success: true, pedidoId });
       } catch (err) {
+        await client.query('ROLLBACK');
         request.log.error(err);
         reply.code(500).send({ success: false, message: 'Erro ao registrar pedido.' });
+      } finally {
+        client.release();
       }
     });
 
     fastify.get('/pedidos/recentes', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-      const usuariosid = request.user.id;
+      const usuarioId = request.user.id;
 
       try {
         const result = await fastify.pg.query(
-          `SELECT * FROM pedidos WHERE usuarios_id = $1 
-            ORDER BY data_pedido DESC LIMIT 3`,
-          [usuariosid]
+          `SELECT * FROM pedidos WHERE usuario_id = $1 
+            ORDER BY data DESC LIMIT 3`,
+          [usuarioId]
         );
 
         reply.send(result.rows);

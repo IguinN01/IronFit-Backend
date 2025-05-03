@@ -455,7 +455,7 @@ const start = async () => {
             repetitions: planoSelecionado.repeticoes,
             billing_day: 10,
           },
-          back_url: 'https://academia-iron.web.app/perfil', 
+          back_url: 'https://academia-iron.web.app/perfil',
           payer_email: email,
         });
 
@@ -530,6 +530,32 @@ const start = async () => {
       } catch (err) {
         request.log.error(err);
         reply.code(500).send({ message: 'Erro ao buscar pedidos.' });
+      }
+    });
+
+    fastify.get('/pedidos/ultimos', { preHandler: [verificaJWT] }, async (req, res) => {
+      const { id } = req.usuario;
+
+      try {
+        const { rows } = await fastify.pg.query(`
+          SELECT p.id, p.data, p.total, p.status,
+            json_agg(json_build_object(
+              'produto_id', pi.produto_id,
+              'quantidade', pi.quantidade,
+              'preco_unitario', pi.preco_unitario
+            )) AS itens
+          FROM pedidos p
+          LEFT JOIN pedido_itens pi ON pi.pedido_id = p.id
+          WHERE p.usuario_id = $1
+          GROUP BY p.id
+          ORDER BY p.data DESC
+          LIMIT 3
+        `, [id]);
+
+        res.send(rows);
+      } catch (error) {
+        console.error(error);
+        res.code(500).send({ erro: 'Erro ao buscar pedidos' });
       }
     });
 

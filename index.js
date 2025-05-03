@@ -455,7 +455,7 @@ const start = async () => {
             repetitions: planoSelecionado.repeticoes,
             billing_day: 10,
           },
-          back_url: 'https://academia-iron.web.app/perfil',
+          back_url: 'https://academia-iron.web.app/perfil', 
           payer_email: email,
         });
 
@@ -495,83 +495,6 @@ const start = async () => {
       } catch (error) {
         console.error(error);
         return reply.status(500).send({ error: 'Erro ao cancelar assinatura.' });
-      }
-    });
-
-    fastify.post('/pedidos', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-      const { produtos, total } = request.body;
-      const usuarioId = request.user.id;
-      const client = await fastify.pg.connect();
-
-      try {
-        await client.query('BEGIN');
-
-        const pedidoResult = await client.query(
-          `INSERT INTO pedidos (usuario_id, total) VALUES ($1, $2) RETURNING id`,
-          [usuarioId, total]
-        );
-        const pedidoId = pedidoResult.rows[0].id;
-
-        for (const item of produtos) {
-          await client.query(
-            `INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario)
-              VALUES ($1, $2, $3, $4)`,
-            [pedidoId, item.produto_id, item.quantidade, item.preco_unitario]
-          );
-        }
-
-        await client.query('COMMIT');
-
-        reply.code(201).send({ success: true, pedidoId });
-      } catch (err) {
-        await client.query('ROLLBACK');
-        request.log.error(err);
-        reply.code(500).send({ success: false, message: 'Erro ao registrar pedido.' });
-      } finally {
-        client.release();
-      }
-    });
-
-    fastify.get('/pedidos/recentes', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-      const usuarioId = request.user.id;
-
-      try {
-        const result = await fastify.pg.query(
-          `SELECT * FROM pedidos WHERE usuario_id = $1 
-            ORDER BY data DESC LIMIT 3`,
-          [usuarioId]
-        );
-
-        reply.send(result.rows);
-      } catch (err) {
-        request.log.error(err);
-        reply.code(500).send({ message: 'Erro ao buscar pedidos.' });
-      }
-    });
-
-    fastify.get('/pedidos/ultimos', { preHandler: [verificaJWT] }, async (req, res) => {
-      const { id } = req.usuario;
-
-      try {
-        const { rows } = await fastify.pg.query(`
-          SELECT p.id, p.data, p.total, p.status,
-            json_agg(json_build_object(
-              'produto_id', pi.produto_id,
-              'quantidade', pi.quantidade,
-              'preco_unitario', pi.preco_unitario
-            )) AS itens
-          FROM pedidos p
-          LEFT JOIN pedido_itens pi ON pi.pedido_id = p.id
-          WHERE p.usuario_id = $1
-          GROUP BY p.id
-          ORDER BY p.data DESC
-          LIMIT 3
-        `, [id]);
-
-        res.send(rows);
-      } catch (error) {
-        console.error(error);
-        res.code(500).send({ erro: 'Erro ao buscar pedidos' });
       }
     });
 

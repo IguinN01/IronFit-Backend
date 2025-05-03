@@ -93,7 +93,7 @@ const start = async () => {
             return reply.status(400).send({ error: "Este e-mail pertence a uma conta com senha. Use login tradicional." });
           }
 
-          const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+          const token = fastify.jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
           return reply.send({ token });
         }
 
@@ -457,7 +457,7 @@ const start = async () => {
             repetitions: planoSelecionado.repeticoes,
             billing_day: 10,
           },
-          back_url: 'https://academia-iron.web.app/perfil', 
+          back_url: 'https://academia-iron.web.app/perfil',
           payer_email: email,
         });
 

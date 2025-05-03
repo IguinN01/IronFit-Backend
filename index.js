@@ -40,8 +40,8 @@ const start = async () => {
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
     });
-    
-    fastify.decorate('pg', pool);    
+
+    fastify.decorate('pg', pool);
 
     mercadopago.configure({
       access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
@@ -432,6 +432,11 @@ const start = async () => {
             periodo: 'monthly',
             repeticoes: 12,
           },
+          'iron-teste': {
+            valor: 0.01,
+            periodo: 'monthly',
+            repeticoes: 1,
+          },
         };
 
         const planoSelecionado = planos[plano];
@@ -450,7 +455,7 @@ const start = async () => {
             repetitions: planoSelecionado.repeticoes,
             billing_day: 10,
           },
-          back_url: 'https://academia-iron.web.app/perfil', //Trocar para https://academia-iron.web.app/perfil
+          back_url: 'https://academia-iron.web.app/perfil', 
           payer_email: email,
         });
 

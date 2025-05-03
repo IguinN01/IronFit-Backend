@@ -2,7 +2,14 @@ import mercadopago from '../config/mercadopago.js';
 import { enviarEmail } from '../utils/email.js';
 
 export default async function pagamentoCreditoRoutes(fastify, opts) {
-  fastify.post('/pagamento-credito', async (request, reply) => {
+  fastify.post('/pagamento-credito', { preHandler: fastify.authenticate }, async (request, reply) => {
+    const userId = request.user.id;
+    const { carrinho, frete } = request.body;
+
+    if (!Array.isArray(carrinho) || typeof frete !== 'number') {
+      return reply.status(400).send({ erro: 'Carrinho ou frete inválido.' });
+    }
+
     try {
       const {
         token,
@@ -49,6 +56,15 @@ export default async function pagamentoCreditoRoutes(fastify, opts) {
         `;
 
         await enviarEmail(email, 'IronFit - Compra confirmada!', html);
+
+        const total = Number(amount);
+        const dataPedido = new Date();
+
+        await fastify.pg.query(
+          `INSERT INTO pedidos (id_usuario, itens, frete, total, data_pedido)
+            VALUES ($1, $2, $3, $4, $5)`,
+          [userId, JSON.stringify(carrinho), frete, total, dataPedido]
+        );
       }
 
       return reply.send({ status, statusDetail, id: pagamentoId });

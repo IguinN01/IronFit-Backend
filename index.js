@@ -433,7 +433,7 @@ const start = async () => {
             repeticoes: 12,
           },
           'iron-teste': {
-            valor: 0.01,
+            valor: 0.51,
             periodo: 'monthly',
             repeticoes: 1,
           },

@@ -6,7 +6,9 @@ import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
 import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
+
 import admin from './firebase.js';
+// console.log('🔐 Firebase admin carregado com sucesso');
 
 import bcrypt from 'bcrypt';
 

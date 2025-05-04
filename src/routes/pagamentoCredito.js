@@ -1,8 +1,9 @@
 import mercadopago from '../config/mercadopago.js';
 import { enviarEmail } from '../utils/email.js';
+import { verificaJWT } from '../auth/autenticacao.js';
 
 export default async function pagamentoCreditoRoutes(fastify, opts) {
-  fastify.post('/pagamento-credito', { preHandler: fastify.authenticate }, async (request, reply) => {
+  fastify.post('/pagamento-credito', { preHandler: verificaJWT }, async (request, reply) => {
     const userId = request.user.id;
     const { carrinho, frete } = request.body;
 

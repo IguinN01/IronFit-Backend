@@ -10,14 +10,8 @@ export async function verificaJWT(request, reply) {
 
     const token = authHeader.split(' ')[1];
 
-    const decoded = jwt.decode(token, { complete: true });
-
-    if (decoded?.payload?.iss?.includes('google.com')) {
-      request.user = decoded.payload;
-      return;
-    }
-
     const usuario = jwt.verify(token, process.env.JWT_SECRET);
+
     request.user = usuario;
 
   } catch (erro) {

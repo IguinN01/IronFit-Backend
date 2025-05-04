@@ -6,6 +6,7 @@ import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
 import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
+import admin from './firebase.js';
 
 import bcrypt from 'bcrypt';
 
@@ -75,15 +76,20 @@ const start = async () => {
     });
 
     fastify.post("/auth/google", async (req, reply) => {
-      console.log("📩 Dados recebidos do Google:", req.body);
+      const { idToken } = req.body;
 
-      const { nome, email, googleId } = req.body;
-
-      if (!email || !googleId) {
-        return reply.status(400).send({ error: "E-mail e Google ID são obrigatórios." });
+      if (!idToken) {
+        return reply.status(400).send({ error: "Token do Google é obrigatório." });
       }
 
       try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const { email, name, uid, picture } = decodedToken;
+
+        if (!email) {
+          return reply.status(400).send({ error: "Token inválido: e-mail ausente." });
+        }
+
         const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
 
         if (usuarioExistente.rows.length > 0) {
@@ -100,18 +106,18 @@ const start = async () => {
         const senhaHash = null;
 
         const novoUsuario = await pool.query(
-          "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3::text) RETURNING id",
-          [nome, email, senhaHash]
+          "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3::text, $4) RETURNING id",
+          [name || "Usuário Google", email, senhaHash, picture || null]
         );
 
         const userId = novoUsuario.rows[0].id;
-
         const token = fastify.jwt.sign({ id: userId, email }, { expiresIn: "1h" });
 
         reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
+
       } catch (erro) {
-        console.error("Erro na autenticação com Google:", erro);
-        reply.status(500).send({ error: "Erro interno no servidor." });
+        console.error("Erro ao verificar token do Firebase:", erro);
+        reply.status(500).send({ error: "Erro ao autenticar com Google." });
       }
     });
 

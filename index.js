@@ -8,7 +8,6 @@ import fastifyExpress from '@fastify/express';
 import fastifyJWT from '@fastify/jwt';
 
 import admin from './firebase.js';
-// console.log('🔐 Firebase admin carregado com sucesso');
 
 import bcrypt from 'bcrypt';
 
@@ -86,40 +85,40 @@ const start = async () => {
 
       try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const { email, name, uid, picture } = decodedToken;
+        const { email, name, picture } = decodedToken;
 
         if (!email) {
           return reply.status(400).send({ error: "Token inválido: e-mail ausente." });
         }
 
-        const usuarioExistente = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+        const resultado = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
 
-        if (usuarioExistente.rows.length > 0) {
-          const usuario = usuarioExistente.rows[0];
+        let userId;
+
+        if (resultado.rows.length > 0) {
+          const usuario = resultado.rows[0];
 
           if (usuario.senha !== null) {
-            return reply.status(400).send({ error: "Este e-mail pertence a uma conta com senha. Use login tradicional." });
+            return reply.status(400).send({
+              error: "Este e-mail está vinculado a uma conta com senha. Faça login tradicional."
+            });
           }
 
-          const token = fastify.jwt.sign({ id: usuario.id, email }, { expiresIn: "1h" });
-          return reply.send({ token });
+          userId = usuario.id;
+        } else {
+          const novoUsuario = await pool.query(
+            "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3, $4) RETURNING id",
+            [name || "Usuário Google", email, null, picture || null]
+          );
+          userId = novoUsuario.rows[0].id;
         }
 
-        const senhaHash = null;
-
-        const novoUsuario = await pool.query(
-          "INSERT INTO usuarios (nome, email, senha, foto) VALUES ($1, $2, $3::text, $4) RETURNING id",
-          [name || "Usuário Google", email, senhaHash, picture || null]
-        );
-
-        const userId = novoUsuario.rows[0].id;
         const token = fastify.jwt.sign({ id: userId, email }, { expiresIn: "1h" });
 
-        reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
-
+        return reply.send({ token });
       } catch (erro) {
-        console.error("Erro ao verificar token do Firebase:", erro);
-        reply.status(500).send({ error: "Erro ao autenticar com Google." });
+        console.error("❌ Erro ao verificar token do Firebase:", erro);
+        return reply.status(500).send({ error: "Falha na autenticação com Google." });
       }
     });
 

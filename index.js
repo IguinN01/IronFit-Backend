@@ -508,6 +508,26 @@ const start = async () => {
       }
     });
 
+    fastify.get('/usuario/:id/pedidos', async (request, reply) => {
+      const { id } = request.params;
+
+      try {
+        const result = await fastify.pg.query(
+          'SELECT * FROM pedidos WHERE id_usuario = $1 ORDER BY data_pedido DESC LIMIT 3',
+          [id]
+        );
+
+        if (result.rows.length === 0) {
+          return reply.status(404).send({ message: 'Nenhum pedido encontrado' });
+        }
+
+        return result.rows;
+      } catch (error) {
+        console.error('Erro ao buscar pedidos:', error);
+        return reply.status(500).send({ error: 'Erro interno do servidor' });
+      }
+    });
+
     const PORT = process.env.PORT || 4000;
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`🟢 Servidor rodando na porta ${PORT}`);

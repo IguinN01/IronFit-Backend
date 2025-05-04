@@ -11,6 +11,7 @@ import admin from './firebase.js';
 
 import bcrypt from 'bcrypt';
 
+import { gerarToken } from './src/utils/jwt.js';
 import { verificaJWT } from './src/auth/autenticacao.js';
 import mercadopago from './src/config/mercadopago.js';
 import pagamentoCreditoRoutes from './src/routes/pagamentoCredito.js';
@@ -113,7 +114,7 @@ const start = async () => {
           userId = novoUsuario.rows[0].id;
         }
 
-        const token = fastify.jwt.sign({ id: userId, email }, { expiresIn: "1h" });
+        const token = gerarToken(fastify, { id: userId, email });
 
         return reply.send({ token });
       } catch (erro) {

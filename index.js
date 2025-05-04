@@ -93,7 +93,7 @@ const start = async () => {
             return reply.status(400).send({ error: "Este e-mail pertence a uma conta com senha. Use login tradicional." });
           }
 
-          const token = fastify.jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+          const token = fastify.jwt.sign({ id: usuario.id, email }, { expiresIn: "1h" });
           return reply.send({ token });
         }
 
@@ -106,7 +106,7 @@ const start = async () => {
 
         const userId = novoUsuario.rows[0].id;
 
-        const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = fastify.jwt.sign({ id: userId, email }, { expiresIn: "1h" });
 
         reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
       } catch (erro) {
@@ -140,7 +140,7 @@ const start = async () => {
 
         const userId = novoUsuario.rows[0].id;
 
-        const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = fastify.jwt.sign({ id: userId, email }, { expiresIn: "1h" });
 
         reply.status(201).send({ message: "Usuário cadastrado com sucesso!", token });
       } catch (erro) {
@@ -168,7 +168,7 @@ const start = async () => {
 
         if (uid) {
           if (usuario.senha === uid) {
-            const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            const token = fastify.jwt.sign({ id: usuario.id, email }, { expiresIn: "1h" });
             return reply.send({ token });
           } else {
             return reply.status(400).send({ error: 'Conta Google inválida.' });
@@ -180,7 +180,7 @@ const start = async () => {
           return reply.status(400).send({ error: 'E-mail ou senha incorretos.' });
         }
 
-        const token = jwt.sign({ id: usuario.id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = fastify.jwt.sign({ id: usuario.id, email }, { expiresIn: "1h" });
         reply.send({ token });
       } catch (err) {
         console.error("Erro no login:", err);

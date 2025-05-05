@@ -442,11 +442,6 @@ const start = async () => {
             periodo: 'monthly',
             repeticoes: 12,
           },
-          'iron-teste': {
-            valor: 0.51,
-            periodo: 'monthly',
-            repeticoes: 1,
-          },
         };
 
         const planoSelecionado = planos[plano];
@@ -541,5 +536,5 @@ start();
 
 // git status
 // git add .
-// git commit -m "170"
+// git commit -m "176"
 // git push origin main

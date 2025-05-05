@@ -5,7 +5,7 @@ import { verificaJWT } from '../auth/autenticacao.js';
 export default async function pagamentoCreditoRoutes(fastify, opts) {
   fastify.post('/pagamento-credito', { preHandler: verificaJWT }, async (request, reply) => {
     const userId = request.user.id;
-    const { carrinho, frete } = request.body;
+    const { carrinho, frete, quantidade } = request.body;
 
     if (!Array.isArray(carrinho) || typeof frete !== 'number') {
       return reply.status(400).send({ erro: 'Carrinho ou frete inválido.' });
@@ -62,9 +62,9 @@ export default async function pagamentoCreditoRoutes(fastify, opts) {
         const dataPedido = new Date();
 
         await fastify.pg.query(
-          `INSERT INTO pedidos (id_usuario, itens, frete, total, data_pedido)
-            VALUES ($1, $2, $3, $4, $5)`,
-          [userId, JSON.stringify(carrinho), frete, total, dataPedido]
+          `INSERT INTO pedidos (id_usuario, itens, frete, total, data_pedido, quantidade)
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+          [userId, JSON.stringify(carrinho), frete, total, dataPedido, quantidade]
         );
       }
 

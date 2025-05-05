@@ -458,7 +458,7 @@ const start = async () => {
             transaction_amount: planoSelecionado.valor,
             currency_id: 'BRL',
             repetitions: planoSelecionado.repeticoes,
-            billing_day: 10,
+            start_date: now,
           },
           back_url: 'https://academia-iron.web.app/perfil',
           payer_email: email,
@@ -536,5 +536,5 @@ start();
 
 // git status
 // git add .
-// git commit -m "176"
+// git commit -m "177"
 // git push origin main
